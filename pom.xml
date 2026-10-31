@@ -588,7 +588,7 @@
         </dependency>
         <!-- Source: https://github.com/easy-4-java/shiro-j2cache — easy4j shiro-j2cache -->
         <dependency>
-            <groupId>io.github.hiwepy</groupId>
+            <groupId>com.github.hiwepy</groupId>
             <artifactId>shiro-j2cache</artifactId>
             <version>${shiro-j2cache.version}</version>
             <scope>provided</scope>
@@ -638,28 +638,28 @@
         <!-- https://mvnrepository.com/artifact/com.github.hiwepy/spring-boot-starter-kaptcha -->
         <!-- Source: https://github.com/easy-4-java/kaptcha-spring-boot-starter — easy4j kaptcha-spring-boot-starter -->
         <dependency>
-            <groupId>io.github.hiwepy</groupId>
+            <groupId>com.github.hiwepy</groupId>
             <artifactId>kaptcha-spring-boot-starter</artifactId>
             <version>${spring-boot-starter-kaptcha.version}</version>
             <scope>provided</scope>
         </dependency>
         <!-- Source: https://github.com/easy-4-java/jcaptcha-spring-boot-starter — easy4j jcaptcha-spring-boot-starter -->
         <dependency>
-            <groupId>io.github.hiwepy</groupId>
+            <groupId>com.github.hiwepy</groupId>
             <artifactId>jcaptcha-spring-boot-starter</artifactId>
             <version>${spring-boot-starter-jcaptcha.version}</version>
             <scope>provided</scope>
         </dependency>
         <!-- Source: https://github.com/easy-4-java/simplecaptcha-spring-boot-starter — easy4j simplecaptcha-spring-boot-starter -->
         <dependency>
-            <groupId>io.github.hiwepy</groupId>
+            <groupId>com.github.hiwepy</groupId>
             <artifactId>simplecaptcha-spring-boot-starter</artifactId>
             <version>${spring-boot-starter-simplecaptcha.version}</version>
             <scope>provided</scope>
         </dependency>
         <!-- Source: https://github.com/easy-4-java/smartcaptcha-spring-boot-starter — easy4j smartcaptcha-spring-boot-starter -->
         <dependency>
-            <groupId>io.github.hiwepy</groupId>
+            <groupId>com.github.hiwepy</groupId>
             <artifactId>smartcaptcha-spring-boot-starter</artifactId>
             <version>${spring-boot-starter-smartcaptcha.version}</version>
             <scope>provided</scope>
