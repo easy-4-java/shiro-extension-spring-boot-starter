@@ -146,6 +146,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Required at runtime by the legacy Shiro filter adapter. -->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>4.0.1</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/jakarta.websocket/jakarta.websocket-api -->
         <dependency>
             <groupId>jakarta.websocket</groupId>
