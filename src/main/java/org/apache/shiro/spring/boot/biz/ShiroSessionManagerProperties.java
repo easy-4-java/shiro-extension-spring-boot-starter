@@ -20,7 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(ShiroSessionManagerProperties.PREFIX)
 public class ShiroSessionManagerProperties {
 
-	public static final String PREFIX = "shiro.sessionManager";
+	public static final String PREFIX = "shiro.session-manager";
 	
     private boolean sessionIdCookieEnabled = true;
     

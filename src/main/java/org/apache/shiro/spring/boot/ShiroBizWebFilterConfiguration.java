@@ -6,7 +6,7 @@ import javax.servlet.DispatcherType;
 
 import org.apache.shiro.biz.authz.principal.ShiroPrincipal;
 import org.apache.shiro.biz.spring.ShiroFilterProxyFactoryBean;
-import org.apache.shiro.biz.utils.StringUtils;
+import org.springframework.util.StringUtils;
 import org.apache.shiro.biz.web.filter.HttpServletRequestEscapeHtml4Filter;
 import org.apache.shiro.biz.web.filter.HttpServletRequestHeaderFilter;
 import org.apache.shiro.biz.web.filter.HttpServletRequestMethodFilter;
@@ -105,7 +105,7 @@ public class ShiroBizWebFilterConfiguration extends AbstractShiroWebFilterConfig
 		FilterRegistrationBean<HttpServletRequestMethodFilter> registration = new FilterRegistrationBean<HttpServletRequestMethodFilter>();
 		
 		HttpServletRequestMethodFilter methodFilter = new HttpServletRequestMethodFilter();
-		methodFilter.setAllowedHTTPMethods(StringUtils.tokenizeToStringArray(properties.getAccessControlAllowMethods()));
+		methodFilter.setAllowedHTTPMethods(StringUtils.tokenizeToStringArray(properties.getAccessControlAllowMethods(), ","));
 		
 		registration.setFilter(methodFilter);
 	    registration.setEnabled(false); 
@@ -201,7 +201,8 @@ public class ShiroBizWebFilterConfiguration extends AbstractShiroWebFilterConfig
 		return new AuthenticatingFailureSessionCounter();
 	}
 	
-	@Bean
+	// The outer Shiro filter must not be injected into its own filter map.
+	@Bean(autowireCandidate = false)
     @ConditionalOnMissingBean
     @Override
     protected ShiroFilterFactoryBean shiroFilterFactoryBean() {
@@ -225,8 +226,8 @@ public class ShiroBizWebFilterConfiguration extends AbstractShiroWebFilterConfig
         
     }
 
-    @Bean(name = "filterShiroFilterRegistrationBean")
-    @ConditionalOnMissingBean
+    @Bean(name = ShiroBizFilterFactoryBean.FILTER_REGISTRATION_BEAN_NAME)
+    @ConditionalOnMissingBean(name = ShiroBizFilterFactoryBean.FILTER_REGISTRATION_BEAN_NAME)
     protected FilterRegistrationBean<AbstractShiroFilter> filterShiroFilterRegistrationBean() throws Exception {
 
         FilterRegistrationBean<AbstractShiroFilter> filterRegistrationBean = new FilterRegistrationBean<AbstractShiroFilter>();

@@ -15,10 +15,8 @@
  */
 package org.apache.shiro.spring.boot.biz;
 
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.servlet.Filter;
 
@@ -28,10 +26,11 @@ import org.springframework.beans.BeansException;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.util.ObjectUtils;
 @SuppressWarnings("rawtypes")
 public class ShiroBizFilterFactoryBean extends ShiroFilterProxyFactoryBean implements ApplicationContextAware  {
 	
+	public static final String FILTER_REGISTRATION_BEAN_NAME = "filterShiroFilterRegistrationBean";
+
 	private ApplicationContext applicationContext;
 	
 	//过滤器链：实现对路径规则的拦截过滤
@@ -40,17 +39,17 @@ public class ShiroBizFilterFactoryBean extends ShiroFilterProxyFactoryBean imple
 		
 		Map<String, Filter> filters = new LinkedHashMap<String, Filter>();
 
-		Map<String, FilterRegistrationBean> beansOfType = getApplicationContext().getBeansOfType(FilterRegistrationBean.class);
-		if (!ObjectUtils.isEmpty(beansOfType)) {
-			Iterator<Entry<String, FilterRegistrationBean>> ite = beansOfType.entrySet().iterator();
-			while (ite.hasNext()) {
-				Entry<String, FilterRegistrationBean> entry = ite.next();
-				if (entry.getValue().getFilter() instanceof AdviceFilter) {
-					filters.put(entry.getKey(), entry.getValue().getFilter());
-				}
-			}
-		}
-		
+        ApplicationContext context = getApplicationContext();
+        for (String name : context.getBeanNamesForType(FilterRegistrationBean.class, true, false)) {
+            if (FILTER_REGISTRATION_BEAN_NAME.equals(name)) {
+                continue;
+            }
+            Filter filter = context.getBean(name, FilterRegistrationBean.class).getFilter();
+            if (filter instanceof AdviceFilter) {
+                filters.put(name, filter);
+            }
+        }
+
 		filters.putAll(super.getFilters());
 		
 		return filters;
