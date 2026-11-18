@@ -15,10 +15,8 @@
  */
 package org.apache.shiro.spring.boot.biz;
 
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.servlet.Filter;
 
@@ -29,7 +27,6 @@ import org.springframework.beans.BeansException;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.util.ObjectUtils;
 /**
  * A {@link ShiroFilterProxyFactoryBean} that discovers all {@link FilterRegistrationBean} instances
  * from the application context and adds their {@link javax.servlet.Filter} instances to the Shiro
@@ -41,6 +38,8 @@ import org.springframework.util.ObjectUtils;
  */
 @SuppressWarnings("rawtypes")
 public class ShiroBizFilterFactoryBean extends ShiroFilterProxyFactoryBean implements ApplicationContextAware  {
+
+    public static final String FILTER_REGISTRATION_BEAN_NAME = "filterShiroFilterRegistrationBean";
 
 	private ApplicationContext applicationContext;
 
@@ -59,21 +58,19 @@ public class ShiroBizFilterFactoryBean extends ShiroFilterProxyFactoryBean imple
 
 		Map<String, Filter> filters = new LinkedHashMap<String, Filter>();
 
-		Map<String, FilterRegistrationBean> beansOfType = getApplicationContext().getBeansOfType(FilterRegistrationBean.class);
-		if (!ObjectUtils.isEmpty(beansOfType)) {
-			Iterator<Entry<String, FilterRegistrationBean>> ite = beansOfType.entrySet().iterator();
-			while (ite.hasNext()) {
-				Entry<String, FilterRegistrationBean> entry = ite.next();
-				Object filterObj = entry.getValue().getFilter();
-				// Unwrap JakartaFilterAdapter to get the original javax.servlet.Filter
-				if (filterObj instanceof JakartaFilterAdapter) {
-					filterObj = ((JakartaFilterAdapter) filterObj).getDelegate();
-				}
-				if (filterObj instanceof AdviceFilter) {
-					filters.put(entry.getKey(), (Filter) filterObj);
-				}
-			}
-		}
+        ApplicationContext context = getApplicationContext();
+        for (String name : context.getBeanNamesForType(FilterRegistrationBean.class, true, false)) {
+            if (FILTER_REGISTRATION_BEAN_NAME.equals(name)) {
+                continue;
+            }
+            Object filter = context.getBean(name, FilterRegistrationBean.class).getFilter();
+            if (filter instanceof JakartaFilterAdapter adapter) {
+                filter = adapter.getDelegate();
+            }
+            if (filter instanceof AdviceFilter adviceFilter) {
+                filters.put(name, adviceFilter);
+            }
+        }
 
 		filters.putAll(super.getFilters());
 

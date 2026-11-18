@@ -28,7 +28,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(ShiroRememberMeManagerCookieProperties.PREFIX)
 public class ShiroRememberMeManagerCookieProperties {
 
-	public static final String PREFIX = "shiro.rememberMeManager.cookie";
+	public static final String PREFIX = "shiro.remember-me-manager.cookie";
 	
 	/**
      * The number of seconds in one week (= 60 * 60 * 24 * 7).

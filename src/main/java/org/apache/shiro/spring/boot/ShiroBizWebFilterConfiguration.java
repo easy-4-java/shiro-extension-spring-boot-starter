@@ -312,7 +312,7 @@ public class ShiroBizWebFilterConfiguration extends AbstractShiroWebFilterConfig
 	 *
 	 * @return the configured Shiro filter factory bean
 	 */
-	@Bean
+	@Bean(autowireCandidate = false)
     @ConditionalOnMissingBean
     @Override
     /**
@@ -346,8 +346,8 @@ public class ShiroBizWebFilterConfiguration extends AbstractShiroWebFilterConfig
      * @return the Shiro filter registration bean
      * @throws Exception if the filter factory bean cannot be created
      */
-    @Bean(name = "filterShiroFilterRegistrationBean")
-    @ConditionalOnMissingBean
+    @Bean(name = ShiroBizFilterFactoryBean.FILTER_REGISTRATION_BEAN_NAME)
+    @ConditionalOnMissingBean(name = ShiroBizFilterFactoryBean.FILTER_REGISTRATION_BEAN_NAME)
     /**
      * <p>Filter shiro filter registration bean.</p>
      * @return the filter shiro filter registration bean
