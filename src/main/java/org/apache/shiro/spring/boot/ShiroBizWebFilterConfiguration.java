@@ -6,7 +6,7 @@ import jakarta.servlet.DispatcherType;
 
 import org.apache.shiro.biz.authz.principal.ShiroPrincipal;
 import org.apache.shiro.biz.spring.ShiroFilterProxyFactoryBean;
-import org.apache.shiro.biz.utils.StringUtils;
+import org.apache.shiro.biz.utils.StringUtils2;
 import org.apache.shiro.biz.web.filter.HttpServletRequestEscapeHtml4Filter;
 import org.apache.shiro.biz.web.filter.HttpServletRequestHeaderFilter;
 import org.apache.shiro.biz.web.filter.HttpServletRequestMethodFilter;
@@ -105,7 +105,7 @@ public class ShiroBizWebFilterConfiguration extends AbstractShiroWebFilterConfig
 		FilterRegistrationBean<HttpServletRequestMethodFilter> registration = new FilterRegistrationBean<HttpServletRequestMethodFilter>();
 		
 		HttpServletRequestMethodFilter methodFilter = new HttpServletRequestMethodFilter();
-		methodFilter.setAllowedHTTPMethods(StringUtils.tokenizeToStringArray(properties.getAccessControlAllowMethods()));
+		methodFilter.setAllowedHTTPMethods(StringUtils2.tokenizeToStringArray(properties.getAccessControlAllowMethods()));
 		
 		registration.setFilter(methodFilter);
 	    registration.setEnabled(false); 

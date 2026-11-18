@@ -18,7 +18,6 @@ package org.apache.shiro.spring.boot;
 import org.apache.shiro.spring.boot.autoconfigure.ShiroAnnotationProcessorAutoConfiguration;
 import org.apache.shiro.spring.config.AbstractShiroAnnotationProcessorConfiguration;
 import org.apache.shiro.spring.config.ShiroAnnotationProcessorConfiguration;
-import org.apache.shiro.util.StringUtils;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -27,6 +26,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.util.StringUtils;
 
 @AutoConfigureBefore({ShiroAnnotationProcessorAutoConfiguration.class, ShiroAnnotationProcessorConfiguration.class })
 @Configuration
