@@ -10,6 +10,10 @@ import org.springframework.mock.web.MockHttpServletResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class JakartaFilterAdapterTest {
 
@@ -75,6 +79,7 @@ class JakartaFilterAdapterTest {
             });
             javax.servlet.http.Cookie cookie = new javax.servlet.http.Cookie("remember", "fixture");
             cookie.setPath("/app");
+            cookie.setDomain("example.com");
             cookie.setHttpOnly(true);
             cookie.setSecure(true);
             cookie.setMaxAge(60);
@@ -82,13 +87,16 @@ class JakartaFilterAdapterTest {
             chain.doFilter(request, response);
         });
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setCookies(new jakarta.servlet.http.Cookie("session", "fixture"));
+        jakarta.servlet.http.Cookie incomingCookie = new jakarta.servlet.http.Cookie("session", "fixture");
+        incomingCookie.setDomain("example.com");
+        request.setCookies(incomingCookie);
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         adapter.doFilter(request, response, (incoming, outgoing) -> {});
 
         assertThat(response.getCookie("remember")).satisfies(cookie -> {
             assertThat(cookie.getPath()).isEqualTo("/app");
+            assertThat(cookie.getDomain()).isEqualTo("example.com");
             assertThat(cookie.isHttpOnly()).isTrue();
             assertThat(cookie.getSecure()).isTrue();
             assertThat(cookie.getMaxAge()).isEqualTo(60);
@@ -126,6 +134,26 @@ class JakartaFilterAdapterTest {
         });
 
         assertThat(reachedChain).isTrue();
+    }
+
+    @Test
+    void preservesJakartaFilterLifecycleAndPropagatesLegacyInitErrors() throws Exception {
+        MockFilterConfig config = new MockFilterConfig("shiro");
+        jakarta.servlet.Filter nativeFilter = mock(jakarta.servlet.Filter.class);
+        JakartaFilterAdapter nativeAdapter = new JakartaFilterAdapter(nativeFilter);
+
+        nativeAdapter.init(config);
+        nativeAdapter.destroy();
+        verify(nativeFilter).init(config);
+        verify(nativeFilter).destroy();
+
+        javax.servlet.Filter legacy = mock(javax.servlet.Filter.class);
+        javax.servlet.ServletException failure = new javax.servlet.ServletException("fixture init");
+        doThrow(failure).when(legacy).init(any());
+        JakartaFilterAdapter legacyAdapter = new JakartaFilterAdapter(legacy);
+        assertThatThrownBy(() -> legacyAdapter.init(config))
+                .isInstanceOf(jakarta.servlet.ServletException.class).hasCause(failure);
+        assertThatThrownBy(() -> new JakartaFilterAdapter(new Object())).isInstanceOf(IllegalArgumentException.class);
     }
 
     @FunctionalInterface

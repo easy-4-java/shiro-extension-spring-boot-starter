@@ -3,11 +3,30 @@ package org.apache.shiro.spring.boot;
 import jakarta.servlet.Filter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.shiro.biz.authc.DefaultAuthenticationFailureHandler;
+import org.apache.shiro.biz.web.filter.HttpServletSessionDequeFilter;
+import org.apache.shiro.biz.web.filter.HttpServletSessionStatusFilter;
+import org.apache.shiro.biz.web.filter.authc.AuthenticatingFailureCounter;
+import org.apache.shiro.biz.web.filter.authc.AuthenticatingFailureRequestCounter;
+import org.apache.shiro.cache.CacheManager;
+import org.apache.shiro.cache.MemoryConstrainedCacheManager;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.session.SessionListener;
+import org.apache.shiro.session.mgt.SessionManager;
+import org.apache.shiro.session.mgt.eis.EnterpriseCacheSessionDAO;
+import org.apache.shiro.session.mgt.eis.MemorySessionDAO;
+import org.apache.shiro.session.mgt.eis.SessionDAO;
+import org.apache.shiro.web.session.mgt.DefaultWebSessionContext;
+import org.apache.shiro.web.session.mgt.DefaultWebSessionManager;
+import org.apache.shiro.web.session.mgt.ServletContainerSessionManager;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import org.apache.shiro.event.EventBus;
 import org.apache.shiro.event.support.DefaultEventBus;
 import org.apache.shiro.realm.Realm;
 import org.apache.shiro.realm.SimpleAccountRealm;
 import org.apache.shiro.spring.boot.cache.ShiroMemoryCacheConfiguration;
+import org.apache.shiro.spring.boot.utils.JakartaFilterAdapter;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -54,6 +73,75 @@ class ShiroBizServletConfigurationTest {
                     assertRequest(filter, "POST", "/protected", HttpServletResponse.SC_OK, true);
                     assertRequest(filter, "DELETE", "/protected", HttpServletResponse.SC_FORBIDDEN, false);
                     assertRequest(filter, "DELETE", "/public", HttpServletResponse.SC_OK, true);
+                });
+    }
+
+    @Test
+    void nativeSessionsUseConfiguredCacheTimeoutAndListener() {
+        SessionListener listener = mock(SessionListener.class);
+        contextRunner.withBean(SessionListener.class, () -> listener)
+                .withPropertyValues("shiro.enabled=true", "shiro.userNativeSessionManager=true",
+                        "shiro.cache.type=memory", "shiro.session-caching-enabled=true",
+                        "shiro.active-sessions-cache-name=test-sessions", "shiro.session-timeout=55000",
+                        "shiro.session-validation-interval=25000", "shiro.session-validation-scheduler-enabled=false")
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    SessionDAO dao = context.getBean(SessionDAO.class);
+                    assertThat(dao).isInstanceOf(EnterpriseCacheSessionDAO.class);
+                    assertThat(((EnterpriseCacheSessionDAO) dao).getActiveSessionsCacheName()).isEqualTo("test-sessions");
+                    DefaultWebSessionManager manager = context.getBean(DefaultWebSessionManager.class);
+                    assertThat(manager.getSessionDAO()).isSameAs(dao);
+                    assertThat(manager.getSessionValidationInterval()).isEqualTo(25_000L);
+                    assertThat(manager.isSessionValidationSchedulerEnabled()).isFalse();
+
+                    DefaultWebSessionContext sessionContext = new DefaultWebSessionContext();
+                    sessionContext.setServletRequest(mock(javax.servlet.http.HttpServletRequest.class));
+                    sessionContext.setServletResponse(mock(javax.servlet.http.HttpServletResponse.class));
+                    Session session = manager.start(sessionContext);
+
+                    assertThat(dao.readSession(session.getId()).getTimeout()).isEqualTo(55_000L);
+                    verify(listener).onStart(any(Session.class));
+                    session.stop();
+                });
+    }
+
+    @Test
+    void containerSessionsRemainTheDefaultWithoutNativeSessionConfiguration() {
+        contextRunner.run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context.getBean("sessionManager", SessionManager.class)).isInstanceOf(ServletContainerSessionManager.class);
+            assertThat(context.getBean(SessionDAO.class)).isInstanceOf(MemorySessionDAO.class);
+            assertThat(context).doesNotHaveBean("filterShiroFilterRegistrationBean");
+        });
+    }
+
+    @Test
+    void installsConfiguredSessionFiltersWhenTheApplicationProvidesCacheAndSessionManagers() {
+        CacheManager cache = new MemoryConstrainedCacheManager();
+        SessionManager sessions = new ServletContainerSessionManager();
+        contextRunner.withBean(CacheManager.class, () -> cache)
+                .withBean("sessionManager", SessionManager.class, () -> sessions)
+                .withPropertyValues("shiro.enabled=true", "shiro.session-stateless=true",
+                        "shiro.login-url=/login", "shiro.redirect-url=/signed-out", "shiro.kickout-first=true",
+                        "shiro.session-deque-cache-name=active-users", "shiro.session-maximum-kickout=2")
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    FilterRegistrationBean<?> statusRegistration = context.getBean("sessionStatus", FilterRegistrationBean.class);
+                    FilterRegistrationBean<?> dequeRegistration = context.getBean("sessionDeque", FilterRegistrationBean.class);
+                    assertThat(statusRegistration.isEnabled()).isFalse();
+                    assertThat(dequeRegistration.isEnabled()).isFalse();
+                    HttpServletSessionStatusFilter status = (HttpServletSessionStatusFilter) ((JakartaFilterAdapter) statusRegistration.getFilter()).getDelegate();
+                    HttpServletSessionDequeFilter deque = (HttpServletSessionDequeFilter) ((JakartaFilterAdapter) dequeRegistration.getFilter()).getDelegate();
+                    assertThat(status.getLoginUrl()).isEqualTo("/login");
+                    assertThat(status.getSessionManager()).isSameAs(sessions);
+                    assertThat(deque.getSessionManager()).isSameAs(sessions);
+                    assertThat(deque.getCacheManager()).isSameAs(cache);
+                    assertThat(deque.getSessionDequeCacheName()).isEqualTo("active-users");
+                    assertThat(deque.getSessionMaximumKickout()).isEqualTo(2);
+                    assertThat(deque.isKickoutFirst()).isTrue();
+                    assertThat(deque.getRedirectUrl()).isEqualTo("/signed-out");
+                    assertThat(context.getBean(AuthenticatingFailureCounter.class))
+                            .isInstanceOf(AuthenticatingFailureRequestCounter.class);
                 });
     }
 
