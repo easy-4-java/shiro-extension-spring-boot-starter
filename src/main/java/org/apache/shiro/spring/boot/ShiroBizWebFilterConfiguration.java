@@ -24,11 +24,20 @@ import org.apache.shiro.spring.boot.biz.ShiroBizFilterFactoryBean;
 import org.apache.shiro.spring.boot.biz.ShiroHttpServletHeaderProperties;
 import org.apache.shiro.spring.boot.biz.ShiroHttpServletReferrerProperties;
 import org.apache.shiro.spring.boot.biz.authc.BizLogoutFilter;
+import org.apache.shiro.spring.boot.cache.ShiroEhCache2CacheConfiguration;
+import org.apache.shiro.spring.boot.cache.ShiroEhCache3CacheConfiguration;
+import org.apache.shiro.spring.boot.cache.ShiroHazelcastCacheConfiguration;
+import org.apache.shiro.spring.boot.cache.ShiroJ2CacheCacheConfiguration;
+import org.apache.shiro.spring.boot.cache.ShiroMemoryCacheConfiguration;
+import org.apache.shiro.spring.boot.cache.ShiroRedisCacheConfiguration;
+import org.apache.shiro.spring.boot.cache.ShiroRedissonCacheConfiguration;
+import org.apache.shiro.spring.boot.cache.ShiroSpringCacheConfiguration;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.spring.web.config.AbstractShiroWebFilterConfiguration;
 import org.apache.shiro.web.servlet.AbstractShiroFilter;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -49,6 +58,17 @@ import org.springframework.core.Ordered;
 @Configuration
 @AutoConfigureBefore( name = {
 	"org.apache.shiro.spring.config.web.autoconfigure.ShiroWebFilterConfiguration" // shiro-spring-boot-web-starter
+})
+@AutoConfigureAfter({
+        ShiroBizWebAutoConfiguration.class,
+        ShiroEhCache2CacheConfiguration.class,
+        ShiroEhCache3CacheConfiguration.class,
+        ShiroHazelcastCacheConfiguration.class,
+        ShiroJ2CacheCacheConfiguration.class,
+        ShiroMemoryCacheConfiguration.class,
+        ShiroRedisCacheConfiguration.class,
+        ShiroRedissonCacheConfiguration.class,
+        ShiroSpringCacheConfiguration.class
 })
 @ConditionalOnWebApplication
 @ConditionalOnProperty(prefix = ShiroBizProperties.PREFIX, value = "enabled", havingValue = "true")
