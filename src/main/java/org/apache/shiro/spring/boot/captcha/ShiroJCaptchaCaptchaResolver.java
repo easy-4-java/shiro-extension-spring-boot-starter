@@ -15,22 +15,29 @@
  */
 package org.apache.shiro.spring.boot.captcha;
 
-import jakarta.servlet.ServletRequest;
+import javax.servlet.ServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.biz.authc.exception.IncorrectCaptchaException;
 import org.apache.shiro.biz.authc.token.CaptchaAuthenticationToken;
-import org.apache.shiro.biz.utils.WebUtils;
+import org.apache.shiro.web.util.WebUtils;
 import org.apache.shiro.biz.web.filter.authc.captcha.CaptchaResolver;
 
-import com.octo.captcha.module.servlet.image.SimpleImageCaptchaServlet;
+import com.octo.captcha.service.image.ImageCaptchaService;
+import java.util.Objects;
 
 /**
  * 验证JCaptcha生成的验证码
  * @author <a href="https://github.com/loong10k">Loong Wan</a>
  */
 public class ShiroJCaptchaCaptchaResolver implements CaptchaResolver {
+
+	private final ImageCaptchaService captchaService;
+
+	public ShiroJCaptchaCaptchaResolver(ImageCaptchaService captchaService) {
+		this.captchaService = Objects.requireNonNull(captchaService, "captchaService");
+	}
 
 	@Override
 	public boolean validCaptcha(ServletRequest request, CaptchaAuthenticationToken token)
@@ -41,7 +48,7 @@ public class ShiroJCaptchaCaptchaResolver implements CaptchaResolver {
 			throw new IncorrectCaptchaException();
 		}
 		try {
-			return SimpleImageCaptchaServlet.validateResponse(WebUtils.toHttp(request), token.getCaptcha());
+			return captchaService.validateResponseForID(WebUtils.toHttp(request).getSession().getId(), token.getCaptcha());
 		} catch (Exception e) {
 			throw new IncorrectCaptchaException(e);
 		}

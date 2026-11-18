@@ -2,9 +2,9 @@ package org.apache.shiro.spring.boot.captcha;
 
 import java.util.Date;
 
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authc.AuthenticationException;
@@ -41,7 +41,7 @@ public class ShiroKaptchaCacheResolver implements KaptchaResolver, CaptchaResolv
 	/**
      * 验证码创建时间在Session中存储值的key
      */
-	private String captchaDateStoreKey = CAPTCHA_SESSION_ATTRIBUTE_NAME;
+	private String captchaDateStoreKey = CAPTCHA_DATE_SESSION_ATTRIBUTE_NAME;
 	/**
      * 验证码有效期；单位（毫秒），默认 60000
      */
