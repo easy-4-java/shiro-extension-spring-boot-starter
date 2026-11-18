@@ -32,7 +32,7 @@ public class ShiroSessionManagerProperties {
 	 *
 	 * @return the session id cookie enabled
 	 */
-	public static final String PREFIX = "shiro.sessionManager";
+	public static final String PREFIX = "shiro.session-manager";
 	
     /** Whether the session ID cookie is enabled, default is true. */
     private boolean sessionIdCookieEnabled = true;

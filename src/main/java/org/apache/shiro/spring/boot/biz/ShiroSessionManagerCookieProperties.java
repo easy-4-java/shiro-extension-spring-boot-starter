@@ -29,7 +29,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(ShiroSessionManagerCookieProperties.PREFIX)
 public class ShiroSessionManagerCookieProperties {
 
-	public static final String PREFIX = "shiro.sessionManager.cookie";
+	public static final String PREFIX = "shiro.session-manager.cookie";
 	
     /** The session cookie name, default is {@link ShiroHttpSession#DEFAULT_SESSION_ID_NAME}. */
     protected String name = ShiroHttpSession.DEFAULT_SESSION_ID_NAME;
