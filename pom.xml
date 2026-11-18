@@ -500,7 +500,6 @@
         <commons-codec.version>1.17.1</commons-codec.version>
         <commons-lang3.version>3.14.0</commons-lang3.version>
         <commons-io.version>2.16.1</commons-io.version>
-         <ehcache3.version>3.6.0</ehcache3.version>
         <ehcache.version>2.10.9.2</ehcache.version>
         <freemarker.version>2.3.33</freemarker.version>
         <guava.version>33.2.1-jre</guava.version>
@@ -667,11 +666,24 @@
             <artifactId>shiro-ehcache3</artifactId>
             <version>${shiro-ehcache3.version}</version>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.ehcache</groupId>
+                    <artifactId>ehcache</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.ehcache/ehcache -->
         <dependency>
             <groupId>org.ehcache</groupId>
             <artifactId>ehcache</artifactId>
+            <version>${ehcache3.version}</version>
+            <classifier>jakarta</classifier>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
             <scope>provided</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.shiro/shiro-hazelcast -->
