@@ -19,7 +19,7 @@ import org.apache.shiro.web.servlet.ShiroHttpSession;
 import org.apache.shiro.web.servlet.SimpleCookie;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(ShiroSessionManagerCookieProperties.PREFIX)
+@ConfigurationProperties("shiro.session-manager.cookie")
 public class ShiroSessionManagerCookieProperties {
 
 	public static final String PREFIX = "shiro.sessionManager.cookie";

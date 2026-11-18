@@ -2,6 +2,7 @@ package org.apache.shiro.spring.boot.actuate;
 
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.shiro.biz.web.Constants;
 import org.apache.shiro.session.mgt.SimpleOnlineSession;
 import org.apache.shiro.session.mgt.SimpleOnlineSession.OnlineStatus;
@@ -52,6 +53,26 @@ class ShiroEndpointTest {
 
         ordinary.setAttribute(Constants.SESSION_FORCE_LOGOUT_KEY, Boolean.TRUE);
         assertThat(endpoint.getSession(ordinary.getId().toString()).getStatus()).isEqualTo(OnlineStatus.FORCE_LOGOUT.getInfo());
+    }
+
+    @Test
+    void keepsTheSessionDescriptorJsonContract() throws Exception {
+        var mapper = new ObjectMapper();
+        String json = """
+                {
+                  "sessionId": "abc",
+                  "host": "from-host",
+                  "startTimestamp": "2026-11-19 10:20:30",
+                  "lastAccessTime": "2026-11-19 10:21:30",
+                  "timeout": 120000,
+                  "userAgent": "browser",
+                  "systemHost": "system-host",
+                  "status": "FORCE_LOGOUT",
+                  "forceLogout": "1"
+                }
+                """;
+        var descriptor = mapper.readValue(json, ShiroEndpoint.SessionDescriptor.class);
+        assertThat(mapper.readTree(mapper.writeValueAsString(descriptor))).isEqualTo(mapper.readTree(json));
     }
 
     @Test

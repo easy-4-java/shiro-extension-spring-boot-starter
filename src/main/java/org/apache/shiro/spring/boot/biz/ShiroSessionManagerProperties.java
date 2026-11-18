@@ -17,7 +17,7 @@ package org.apache.shiro.spring.boot.biz;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(ShiroSessionManagerProperties.PREFIX)
+@ConfigurationProperties("shiro.session-manager")
 public class ShiroSessionManagerProperties {
 
 	public static final String PREFIX = "shiro.sessionManager";

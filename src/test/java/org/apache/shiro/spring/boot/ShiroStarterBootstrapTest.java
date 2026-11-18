@@ -2,8 +2,10 @@ package org.apache.shiro.spring.boot;
 
 import org.apache.shiro.cache.MemoryConstrainedCacheManager;
 import org.apache.shiro.realm.SimpleAccountRealm;
+import org.apache.shiro.spring.boot.actuate.ShiroEndpoint;
 import org.junit.jupiter.api.Test;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
+import org.springframework.boot.actuate.endpoint.web.WebEndpointsSupplier;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -34,6 +36,25 @@ class ShiroStarterBootstrapTest {
                 .run(context -> {
                     assertThat(context).hasNotFailed();
                     assertThat(context.getBean(org.apache.shiro.cache.CacheManager.class).getCache("mapped")).isNotNull();
+                });
+    }
+
+    @Test
+    void exposesTheShiroActuatorEndpointOnlyWhenSelected() {
+        var runner = new WebApplicationContextRunner()
+                .withUserConfiguration(TestApplication.class)
+                .withPropertyValues("shiro.cache.type=memory");
+        runner.withPropertyValues("management.endpoints.web.exposure.include=health")
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    assertThat(context).doesNotHaveBean(ShiroEndpoint.class);
+                });
+        runner.withPropertyValues("management.endpoints.web.exposure.include=shiro")
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    assertThat(context.getBean(ShiroEndpoint.class).shiroSessions().getSessions()).isEmpty();
+                    assertThat(context.getBean(WebEndpointsSupplier.class).getEndpoints())
+                            .anyMatch(endpoint -> endpoint.getEndpointId().toString().equals("shiro"));
                 });
     }
 

@@ -16,6 +16,7 @@ import org.redisson.client.codec.Codec;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.env.MapPropertySource;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -43,6 +44,22 @@ class ShiroRedissonCacheConfigurationTest {
                 "shiro.cache.redisson.config-map.sessions.ttl", "5000",
                 "shiro.cache.redisson.config-map.sessions.max-idle-time", "2000",
                 "shiro.cache.redisson.config-map.sessions.max-size", "10"));
+    }
+
+    @Test
+    void readsJsonSettingsFromAResourceUrl(@TempDir Path temporary) throws IOException {
+        Path json = Files.writeString(temporary.resolve("cache.json"), """
+                {"sessions":{"ttl":5000,"maxIdleTime":2000,"maxSize":10}}
+                """);
+        assertRegionSettings(Map.of("shiro.cache.redisson.config-location", "url:" + json.toUri()));
+    }
+
+    @Test
+    void reportsMalformedRegionSettingsAtStartup(@TempDir Path temporary) throws IOException {
+        Path invalid = Files.writeString(temporary.resolve("invalid.yml"), "sessions: [");
+        String location = "file:" + invalid;
+        assertThatThrownBy(() -> assertRegionSettings(Map.of("shiro.cache.redisson.config-location", location)))
+                .hasStackTraceContaining("Could not parse cache configuration at [" + location + "]");
     }
 
     @SuppressWarnings("unchecked")
