@@ -2,7 +2,14 @@ package org.apache.shiro.spring.boot;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.shiro.authc.ExcessiveAttemptsException;
+import org.apache.shiro.authc.SimpleAuthenticationInfo;
+import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.biz.authc.DefaultAuthenticationFailureHandler;
+import org.apache.shiro.biz.authc.credential.CredentialRetryStore;
+import org.apache.shiro.biz.authc.credential.CredentialRetryStore.Attempt;
+import org.apache.shiro.biz.authc.credential.DefaultCredentialsMatcher;
+import org.apache.shiro.biz.authc.credential.spring.CredentialRetryStoreAutoConfiguration;
 import org.apache.shiro.biz.web.filter.HttpServletSessionDequeFilter;
 import org.apache.shiro.biz.web.filter.HttpServletSessionStatusFilter;
 import org.apache.shiro.biz.web.filter.authc.AuthenticatingFailureCounter;
@@ -21,6 +28,7 @@ import org.apache.shiro.web.session.mgt.ServletContainerSessionManager;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.apache.shiro.event.EventBus;
 import org.apache.shiro.event.support.DefaultEventBus;
 import org.apache.shiro.realm.Realm;
@@ -37,6 +45,7 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ShiroBizServletConfigurationTest {
 
@@ -51,7 +60,36 @@ class ShiroBizServletConfigurationTest {
     void starterRegistersServletAutoConfigurationsForBoot() {
         assertThat(ImportCandidates.load(AutoConfiguration.class, getClass().getClassLoader()).getCandidates())
                 .contains(ShiroBizAutoConfiguration.class.getName(), ShiroBizWebAutoConfiguration.class.getName(),
-                        ShiroBizWebFilterConfiguration.class.getName());
+                        ShiroBizWebFilterConfiguration.class.getName(), CredentialRetryStoreAutoConfiguration.class.getName());
+    }
+
+    @Test
+    void springManagedRealmUsesTheConfiguredCredentialRetryStore() {
+        CredentialRetryStore store = mock(CredentialRetryStore.class);
+        when(store.reserve("alice")).thenReturn(new Attempt("window", 1), new Attempt("window", 2));
+        DefaultCredentialsMatcher matcher = new DefaultCredentialsMatcher();
+        matcher.setCredentialsRetryCacheName("login");
+        matcher.setRetryLimit(2);
+
+        contextRunner.withConfiguration(AutoConfigurations.of(CredentialRetryStoreAutoConfiguration.class))
+                .withBean("shiro.credential-retry.login", CredentialRetryStore.class, () -> store)
+                .withBean("retryRealm", SimpleAccountRealm.class, () -> {
+                    SimpleAccountRealm realm = new SimpleAccountRealm();
+                    realm.setCredentialsMatcher(matcher);
+                    return realm;
+                })
+                .withPropertyValues("shiro.enabled=true")
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    assertThat(context.getBean("retryRealm", SimpleAccountRealm.class).getCredentialsMatcher())
+                            .isSameAs(matcher);
+                    assertThat(matcher.getCredentialRetryStore()).isSameAs(store);
+                    UsernamePasswordToken token = new UsernamePasswordToken("alice", "wrong");
+                    SimpleAuthenticationInfo account = new SimpleAuthenticationInfo("alice", "correct", "retryRealm");
+                    assertThat(matcher.doCredentialsMatch(token, account)).isFalse();
+                    assertThatThrownBy(() -> matcher.doCredentialsMatch(token, account))
+                            .isInstanceOf(ExcessiveAttemptsException.class);
+                });
     }
 
     @Test
@@ -95,8 +133,8 @@ class ShiroBizServletConfigurationTest {
                     assertThat(manager.isSessionValidationSchedulerEnabled()).isFalse();
 
                     DefaultWebSessionContext sessionContext = new DefaultWebSessionContext();
-                    sessionContext.setServletRequest(mock(javax.servlet.http.HttpServletRequest.class));
-                    sessionContext.setServletResponse(mock(javax.servlet.http.HttpServletResponse.class));
+                    sessionContext.setServletRequest(mock(jakarta.servlet.http.HttpServletRequest.class));
+                    sessionContext.setServletResponse(mock(jakarta.servlet.http.HttpServletResponse.class));
                     Session session = manager.start(sessionContext);
 
                     assertThat(dao.readSession(session.getId()).getTimeout()).isEqualTo(55_000L);

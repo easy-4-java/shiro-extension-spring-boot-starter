@@ -15,7 +15,9 @@ import org.apache.shiro.spring.boot.actuate.ShiroEndpoint.SessionDescriptor;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -28,11 +30,11 @@ class ShiroEndpointTest {
 
     @Test
     void formatsCalendarMonthAndIncludesOnlineMetadataInListAndDetail() {
-        SimpleOnlineSession online = new SimpleOnlineSession("127.0.0.1");
+        SimpleOnlineSession online = spy(new SimpleOnlineSession("127.0.0.1"));
         online.setId("online");
         online.setUserAgent("test-client");
         online.setSystemHost("test-host");
-        online.setStartTimestamp(atLocalTime(10, 17));
+        doReturn(atLocalTime(10, 17)).when(online).getStartTimestamp();
         online.setLastAccessTime(atLocalTime(11, 42));
         online.setTimeout(60_000L);
         SimpleSession plain = new SimpleSession("127.0.0.2");

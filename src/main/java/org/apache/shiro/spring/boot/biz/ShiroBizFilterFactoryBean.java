@@ -18,7 +18,7 @@ package org.apache.shiro.spring.boot.biz;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import javax.servlet.Filter;
+import jakarta.servlet.Filter;
 
 import org.apache.shiro.biz.spring.ShiroFilterProxyFactoryBean;
 import org.apache.shiro.spring.boot.utils.JakartaFilterAdapter;
@@ -29,7 +29,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 /**
  * A {@link ShiroFilterProxyFactoryBean} that discovers all {@link FilterRegistrationBean} instances
- * from the application context and adds their {@link javax.servlet.Filter} instances to the Shiro
+ * from the application context and adds their {@link jakarta.servlet.Filter} instances to the Shiro
  * filter chain. This ensures that filters registered as Spring beans but intended for Shiro are
  * properly included in the Shiro filter chain rather than the servlet container filter chain.
  *

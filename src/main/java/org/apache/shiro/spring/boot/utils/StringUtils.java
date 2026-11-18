@@ -16,13 +16,13 @@
 package org.apache.shiro.spring.boot.utils;
 
 /**
- * Extension of {@link org.apache.shiro.util.StringUtils} that provides additional string
+ * Uses Shiro string utilities to provide additional string
  * tokenization utilities for Shiro configuration path parsing.
  *
  * @author <a href="https://github.com/loong10k">Loong Wan</a>
  * @since 1.0.0
  */
-public class StringUtils extends org.apache.shiro.util.StringUtils{
+public class StringUtils {
 
 	/**
 	 * Any number of these characters are considered delimiters between multiple
@@ -37,7 +37,7 @@ public class StringUtils extends org.apache.shiro.util.StringUtils{
 	 * @return the result
 	 */
 	public static String[] tokenizeToStringArray(String str) {
-		return tokenizeToStringArray(str, CONFIG_LOCATION_DELIMITERS);
+		return org.apache.shiro.lang.util.StringUtils.tokenizeToStringArray(str, CONFIG_LOCATION_DELIMITERS);
 	}
 	
 }

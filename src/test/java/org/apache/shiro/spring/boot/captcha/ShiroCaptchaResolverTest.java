@@ -5,8 +5,8 @@ import com.octo.captcha.spring.boot.servlet.image.SimpleImageCaptchaServlet;
 
 import java.util.Date;
 import java.util.HashMap;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import org.apache.shiro.biz.authc.exception.IncorrectCaptchaException;
 import org.apache.shiro.biz.authc.exception.InvalidCaptchaException;
@@ -25,6 +25,13 @@ class ShiroCaptchaResolverTest {
 
     private final CaptchaAuthenticationToken token = mock(CaptchaAuthenticationToken.class);
     private final HttpServletRequest request = mock(HttpServletRequest.class);
+
+    @Test
+    void nullResolverDoesNotAcceptCaptchaForJakartaRequests() {
+        when(token.getCaptcha()).thenReturn("provided-captcha");
+
+        assertThat(new NullCaptchaResolver().validCaptcha(request, token)).isFalse();
+    }
 
     @Test
     void cacheResolverKeepsDefaultAnswerAndTimestampSeparate() {
