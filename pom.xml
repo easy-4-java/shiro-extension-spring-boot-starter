@@ -64,7 +64,7 @@
         <ehcache.version>2.10.9.2</ehcache.version>
         <ehcache3.version>3.6.0</ehcache3.version>
         <freemarker.version>2.3.33</freemarker.version>
-        <guava.version>33.2.1-jre</guava.version>
+        <guava.version>33.7.2-jre</guava.version>
         <j2cache.version>2.8.5-release</j2cache.version>
         <javax.websocket-api.version>1.1.1</javax.websocket-api.version>
         <shiro-extension.version>3.0.x.20260630-SNAPSHOT</shiro-extension.version>
@@ -73,7 +73,7 @@
         <shiro-hazelcast.version>2.2.1</shiro-hazelcast.version>
         <shiro-j2cache.version>3.0.x.20260630-SNAPSHOT</shiro-j2cache.version>
         <shiro-redis.version>3.3.1</shiro-redis.version>
-        <shiro-redisson.version>1.5.0.RELEASE</shiro-redisson.version>
+        <shiro-redisson.version>3.0.x.20261119-SNAPSHOT</shiro-redisson.version>
         <shiro.version>3.0.2</shiro.version>
         <slf4j.version>2.0.18</slf4j.version>
         <spring-boot-starter-jcaptcha.version>4.1.x.20260630-SNAPSHOT</spring-boot-starter-jcaptcha.version>
@@ -357,9 +357,9 @@
             </exclusions>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/com.github.streamone/shiro-redisson -->
+        <!-- https://github.com/easy-4-java/shiro-redisson -->
         <dependency>
-            <groupId>com.github.streamone</groupId>
+            <groupId>io.github.easy4j</groupId>
             <artifactId>shiro-redisson</artifactId>
             <version>${shiro-redisson.version}</version>
             <scope>provided</scope>
