@@ -1,6 +1,7 @@
 package org.apache.shiro.spring.boot.captcha;
 
 import java.util.Date;
+import java.util.Objects;
 
 import javax.servlet.ServletRequest;
 
@@ -32,7 +33,7 @@ public class ShiroKaptchaCacheResolver implements CaptchaResolver {
 	/** The cache key for storing the captcha text. */
 	private String captchaStoreKey = CAPTCHA_SESSION_ATTRIBUTE_NAME;
 	/** The cache key for storing the captcha creation time. */
-	private String captchaDateStoreKey = CAPTCHA_SESSION_ATTRIBUTE_NAME;
+	private String captchaDateStoreKey = CAPTCHA_DATE_SESSION_ATTRIBUTE_NAME;
 	/** The captcha validity period in milliseconds, default is 60000 (60 seconds). */
 	private long captchaTimeout = ShiroBizProperties.DEFAULT_CAPTCHA_TIMEOUT;
 
@@ -94,7 +95,7 @@ public class ShiroKaptchaCacheResolver implements CaptchaResolver {
 			}
 			// 检查验证码是否过期
 			Date sessionCapDate = (Date) getCaptchaCache().get(getCaptchaDateStoreKey());
-			if(new Date().getTime() - sessionCapDate.getTime()  > getCaptchaTimeout()) {
+			if (Objects.isNull(sessionCapDate) || System.currentTimeMillis() - sessionCapDate.getTime() > getCaptchaTimeout()) {
 				throw new InvalidCaptchaException();
 			}
 

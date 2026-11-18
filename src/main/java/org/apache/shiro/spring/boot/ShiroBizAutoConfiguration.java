@@ -128,6 +128,7 @@ public class ShiroBizAutoConfiguration implements ApplicationContextAware {
 	 * @return the default authentication failure handler
 	 */
 	@Bean
+	@ConditionalOnMissingBean(name = "defaultAuthenticationFailureHandler")
     /**
      * <p>Default authentication failure handler.</p>
      * @return the default authentication failure handler

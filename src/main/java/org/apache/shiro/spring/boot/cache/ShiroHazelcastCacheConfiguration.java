@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Configuration;
 @AutoConfigureAfter(AbstractCachingConfiguration.class)
 @AutoConfigureBefore(ShiroWebAutoConfiguration.class)
 @ConditionalOnClass({com.hazelcast.core.Hazelcast.class, com.hazelcast.config.Config.class})
-@ConditionalOnProperty(prefix = ShiroCacheProperties.PREFIX, value = "type", havingValue = "spring")
+@ConditionalOnProperty(prefix = ShiroCacheProperties.PREFIX, value = "type", havingValue = "hazelcast")
 @EnableConfigurationProperties({ ShiroHazelcastCacheProperties.class })
 public class ShiroHazelcastCacheConfiguration {
 
