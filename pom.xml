@@ -62,14 +62,12 @@
         <commons-io.version>2.22.0</commons-io.version>
         <commons-lang3.version>3.14.0</commons-lang3.version>
         <ehcache.version>2.10.9.2</ehcache.version>
-        <ehcache3.version>3.6.0</ehcache3.version>
         <freemarker.version>2.3.33</freemarker.version>
         <guava.version>33.7.2-jre</guava.version>
         <j2cache.version>2.8.5-release</j2cache.version>
         <javax.websocket-api.version>1.1.1</javax.websocket-api.version>
         <shiro-extension.version>3.0.x.20260630-SNAPSHOT</shiro-extension.version>
         <shiro-ehcache.version>2.2.1</shiro-ehcache.version>
-        <shiro-ehcache3.version>1.0.0</shiro-ehcache3.version>
         <shiro-hazelcast.version>2.2.1</shiro-hazelcast.version>
         <shiro-j2cache.version>3.0.x.20260630-SNAPSHOT</shiro-j2cache.version>
         <shiro-redis.version>3.3.1</shiro-redis.version>
@@ -289,18 +287,11 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.ehcache.integrations.shiro/shiro-ehcache3 -->
+        <!-- Optional native Ehcache 3 integration, including the Jakarta XML parser. -->
         <dependency>
-            <groupId>org.ehcache.integrations.shiro</groupId>
-            <artifactId>shiro-ehcache3</artifactId>
-            <version>${shiro-ehcache3.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/org.ehcache/ehcache -->
-        <dependency>
-            <groupId>org.ehcache</groupId>
-            <artifactId>ehcache</artifactId>
+            <groupId>io.github.easy4j</groupId>
+            <artifactId>shiro-extension-ehcache3</artifactId>
+            <version>${shiro-extension.version}</version>
             <scope>provided</scope>
         </dependency>
 
