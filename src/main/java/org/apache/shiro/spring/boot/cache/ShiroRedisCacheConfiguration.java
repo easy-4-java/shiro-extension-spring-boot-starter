@@ -7,15 +7,19 @@ import org.crazycake.shiro.RedisCacheManager;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandidate;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.AbstractCachingConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import redis.clients.jedis.JedisPool;
 
 /**
  * Auto-configuration for Shiro Redis cache manager. Activates when the Shiro Redis client is on the classpath
  * and the {@code shiro.cache.type} property is set to "redis".
+ * If the application supplies a Jedis pool, it can be used without a separate Redis manager bean.
  *
  * @author <a href="https://github.com/loong10k">Loong Wan</a>
  * @since 1.0.0
@@ -50,5 +54,17 @@ public class ShiroRedisCacheConfiguration {
 		
 		return cacheManager;
 	}
+
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(JedisPool.class)
+    @ConditionalOnSingleCandidate(JedisPool.class)
+    static class JedisPoolConfiguration {
+
+        @Bean
+        @ConditionalOnMissingBean(IRedisManager.class)
+        IRedisManager shiroRedisManager(JedisPool pool) {
+            return new JedisPoolRedisManager(pool);
+        }
+    }
 
 }

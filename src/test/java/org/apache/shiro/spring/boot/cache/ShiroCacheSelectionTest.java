@@ -1,6 +1,12 @@
 package org.apache.shiro.spring.boot.cache;
 
 import com.github.streamone.shiro.cache.RedissonShiroCacheManager;
+import java.util.List;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.params.ScanParams;
+import redis.clients.jedis.params.SetParams;
+import redis.clients.jedis.resps.ScanResult;
 import org.apache.shiro.cache.Cache;
 import org.apache.shiro.cache.CacheManager;
 import org.apache.shiro.hazelcast.cache.HazelcastCacheManager;
@@ -14,7 +20,12 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class ShiroCacheSelectionTest {
 
@@ -55,16 +66,59 @@ class ShiroCacheSelectionTest {
     void redisAdapterUsesConfiguredExpiryPrefixAndPrincipalField() {
         IRedisManager redis = mock(IRedisManager.class);
         contextRunner.withBean(IRedisManager.class, () -> redis)
+                .withBean(JedisPool.class, () -> mock(JedisPool.class))
                 .withPropertyValues("shiro.cache.type=redis", "shiro.cache.redis.expire=420",
                         "shiro.cache.redis.key-prefix=example:", "shiro.cache.redis.principal-id-field-name=employeeId")
                 .run(context -> {
                     assertThat(context).hasSingleBean(CacheManager.class);
                     RedisCacheManager manager = context.getBean(RedisCacheManager.class);
+                    assertThat(context).hasSingleBean(IRedisManager.class);
                     assertThat(manager.getRedisManager()).isSameAs(redis);
                     assertThat(manager.getExpire()).isEqualTo(420);
                     assertThat(manager.getKeyPrefix()).isEqualTo("example:");
                     assertThat(manager.getPrincipalIdFieldName()).isEqualTo("employeeId");
                 });
+    }
+
+    @Test
+    void redisAdaptsTheApplicationJedisPoolWhenNoCustomManagerExists() {
+        JedisPool pool = mock(JedisPool.class);
+        Jedis jedis = mock(Jedis.class);
+        when(pool.getResource()).thenReturn(jedis);
+        byte[] key = {1};
+        byte[] value = {2};
+        byte[] match = {3};
+        byte[] cursor = {'5'};
+        byte[] first = {4};
+        byte[] second = {5};
+        when(jedis.get(key)).thenReturn(value);
+        when(jedis.scan(eq(ScanParams.SCAN_POINTER_START_BINARY), any(ScanParams.class)))
+                .thenReturn(new ScanResult<>(cursor, List.of(first)));
+        when(jedis.scan(eq(cursor), any(ScanParams.class)))
+                .thenReturn(new ScanResult<>(ScanParams.SCAN_POINTER_START_BINARY, List.of(second)));
+
+        contextRunner.withBean(JedisPool.class, () -> pool)
+                .withPropertyValues("shiro.cache.type=redis")
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    assertThat(context).hasSingleBean(IRedisManager.class);
+                    IRedisManager manager = context.getBean(IRedisManager.class);
+                    assertThat(context.getBean(RedisCacheManager.class).getRedisManager()).isSameAs(manager);
+                    assertThat(manager.get(key)).isSameAs(value);
+                    assertThat(manager.set(key, value, 30)).isSameAs(value);
+                    assertThat(manager.set(key, value, 0)).isSameAs(value);
+                    manager.del(key);
+                    assertThat(manager.dbSize(match)).isEqualTo(2L);
+                    assertThat(manager.keys(match)).containsExactlyInAnyOrder(first, second);
+                    assertThat(manager.get(null)).isNull();
+                    assertThat(manager.set(null, value, 1)).isNull();
+                    manager.del(null);
+                });
+
+        verify(jedis).set(key, value, SetParams.setParams().ex(30));
+        verify(jedis).set(key, value);
+        verify(jedis).del(key);
+        verify(jedis, times(6)).close();
     }
 
     @Test
