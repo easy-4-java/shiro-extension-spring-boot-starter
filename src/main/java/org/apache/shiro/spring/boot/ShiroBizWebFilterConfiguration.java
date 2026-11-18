@@ -201,7 +201,8 @@ public class ShiroBizWebFilterConfiguration extends AbstractShiroWebFilterConfig
 		return new AuthenticatingFailureSessionCounter();
 	}
 	
-	@Bean
+	// The outer Shiro filter must not be injected into its own filter map.
+	@Bean(autowireCandidate = false)
     @ConditionalOnMissingBean
     @Override
     protected ShiroFilterFactoryBean shiroFilterFactoryBean() {
@@ -225,8 +226,8 @@ public class ShiroBizWebFilterConfiguration extends AbstractShiroWebFilterConfig
         
     }
 
-    @Bean(name = "filterShiroFilterRegistrationBean")
-    @ConditionalOnMissingBean
+    @Bean(name = ShiroBizFilterFactoryBean.FILTER_REGISTRATION_BEAN_NAME)
+    @ConditionalOnMissingBean(name = ShiroBizFilterFactoryBean.FILTER_REGISTRATION_BEAN_NAME)
     protected FilterRegistrationBean<AbstractShiroFilter> filterShiroFilterRegistrationBean() throws Exception {
 
         FilterRegistrationBean<AbstractShiroFilter> filterRegistrationBean = new FilterRegistrationBean<AbstractShiroFilter>();

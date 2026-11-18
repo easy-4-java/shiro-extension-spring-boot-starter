@@ -1,14 +1,24 @@
 package org.apache.shiro.spring.boot.captcha;
 
+import com.google.code.kaptcha.spring.boot.ext.KaptchaResolver;
+import com.google.code.kaptcha.spring.boot.ext.exception.CaptchaIncorrectException;
+import com.google.code.kaptcha.spring.boot.ext.exception.CaptchaTimeoutException;
 import com.octo.captcha.service.image.ImageCaptchaService;
 import org.apache.shiro.biz.authc.exception.IncorrectCaptchaException;
+import org.apache.shiro.biz.authc.exception.InvalidCaptchaException;
 import org.apache.shiro.biz.authc.token.CaptchaAuthenticationToken;
 import org.apache.shiro.cache.Cache;
+import org.apache.shiro.cache.MapCache;
+import org.apache.shiro.mgt.DefaultSecurityManager;
+import org.apache.shiro.subject.Subject;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.util.Date;
+import java.util.HashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -56,4 +66,57 @@ class ShiroCaptchaResolverTest {
         verify(cache).put(resolver.getCaptchaStoreKey(), "answer");
         verify(cache).put(resolver.getCaptchaDateStoreKey(), created);
     }
+    @Test
+    void cacheResolverRejectsAnAnswerWithoutItsTimestamp() {
+        Cache<String, Object> cache = new MapCache<>("captcha", new HashMap<>());
+        ShiroKaptchaCacheResolver resolver = new ShiroKaptchaCacheResolver(cache);
+        cache.put(resolver.getCaptchaStoreKey(), "answer");
+        CaptchaAuthenticationToken token = mock(CaptchaAuthenticationToken.class);
+        when(token.getCaptcha()).thenReturn("answer");
+
+        assertThatThrownBy(() -> resolver.validCaptcha(new MockHttpServletRequest(), token))
+                .isInstanceOf(InvalidCaptchaException.class);
+    }
+
+    @Test
+    void sessionResolverRejectsAnAnswerWithoutItsTimestamp() {
+        Subject subject = new Subject.Builder(new DefaultSecurityManager()).buildSubject();
+        ShiroKaptchaSessionResolver resolver = new ShiroKaptchaSessionResolver();
+        subject.getSession().setAttribute(resolver.getCaptchaStoreKey(), "answer");
+        CaptchaAuthenticationToken token = mock(CaptchaAuthenticationToken.class);
+        when(token.getCaptcha()).thenReturn("answer");
+
+        subject.execute(() -> {
+            assertThatThrownBy(() -> resolver.validCaptcha(new MockHttpServletRequest(), token))
+                    .isInstanceOf(InvalidCaptchaException.class);
+        });
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void kaptchaResolversApplyConfiguredKeysAndTimeout(boolean useCache) {
+        Subject subject = new Subject.Builder(new DefaultSecurityManager()).buildSubject();
+        KaptchaResolver resolver = useCache
+                ? new ShiroKaptchaCacheResolver(new MapCache<>("captcha", new HashMap<>()))
+                : new ShiroKaptchaSessionResolver();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        subject.execute(() -> {
+            resolver.init("answerKey", "timestampKey", 60_000L);
+            assertThatThrownBy(() -> resolver.validCaptcha(request, "answer"))
+                    .isInstanceOf(CaptchaIncorrectException.class);
+            resolver.setCaptcha(request, response, "Answer", null);
+            assertThat(resolver.validCaptcha(request, "answer")).isTrue();
+            assertThat(resolver.validCaptcha(request, "wrong")).isFalse();
+            assertThatThrownBy(() -> resolver.validCaptcha(request, ""))
+                    .isInstanceOf(CaptchaIncorrectException.class);
+
+            resolver.setCaptcha(request, response, "Answer", new Date(0L));
+            assertThatThrownBy(() -> resolver.validCaptcha(request, "answer"))
+                    .isInstanceOf(CaptchaTimeoutException.class);
+            return null;
+        });
+    }
+
 }

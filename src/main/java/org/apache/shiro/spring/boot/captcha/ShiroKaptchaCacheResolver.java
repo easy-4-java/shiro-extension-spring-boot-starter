@@ -1,6 +1,7 @@
 package org.apache.shiro.spring.boot.captcha;
 
 import java.util.Date;
+import java.util.Objects;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
@@ -115,7 +116,7 @@ public class ShiroKaptchaCacheResolver implements KaptchaResolver, CaptchaResolv
 		}
 		// 检查验证码是否过期
 		Date sessionCapDate = (Date) getCaptchaCache().get(getCaptchaDateStoreKey());
-		if(new Date().getTime() - sessionCapDate.getTime()  > getCaptchaTimeout()) {
+		if (Objects.isNull(sessionCapDate) || System.currentTimeMillis() - sessionCapDate.getTime() > getCaptchaTimeout()) {
 			throw new CaptchaTimeoutException();
 		}
 		
