@@ -45,6 +45,7 @@ public class ShiroBizAnnotationProcessorAutoConfiguration extends AbstractShiroA
 		// 解决Shiro与Spring Aop 冲突
 		DefaultAdvisorAutoProxyCreator advisorAutoProxyCreator = super.defaultAdvisorAutoProxyCreator();
 		advisorAutoProxyCreator.setProxyTargetClass(properties.isProxyTargetClass());
+		advisorAutoProxyCreator.setOptimize(properties.isOptimize());
         advisorAutoProxyCreator.setExposeProxy(properties.isExposeProxy());
         advisorAutoProxyCreator.setFrozen(properties.isFrozen());
         advisorAutoProxyCreator.setOpaque(properties.isOpaque());

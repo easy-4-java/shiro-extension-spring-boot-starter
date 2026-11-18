@@ -16,12 +16,16 @@
 package org.apache.shiro.spring.boot.actuate;
 
 import java.io.Serializable;
-import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.shiro.biz.web.Constants;
 import org.apache.shiro.session.Session;
+import org.apache.shiro.session.UnknownSessionException;
 import org.apache.shiro.session.mgt.SimpleOnlineSession;
 import org.apache.shiro.session.mgt.SimpleOnlineSession.OnlineStatus;
 import org.apache.shiro.session.mgt.eis.SessionDAO;
@@ -30,7 +34,6 @@ import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 
-import com.google.common.collect.Maps;
 
 /**
  * {@link Endpoint} to expose shiro info.
@@ -39,67 +42,55 @@ import com.google.common.collect.Maps;
 @Endpoint(id = "shiro")
 public class ShiroEndpoint {
 	
-	private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-mm-dd HH:mm:ss");
-	private final SessionDAO sessionDAO;
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+            .withZone(ZoneId.systemDefault());
 
-	public ShiroEndpoint( SessionDAO sessionDAO) {
-		this.sessionDAO = sessionDAO;
-	}
+    private final SessionDAO sessionDAO;
 
-	@ReadOperation
-	public ApplicationShiroSessions shiroSessions() {
-		Map<Serializable, SessionDescriptor> shiroSessions = Maps.newHashMap();
-		Collection<Session> sessions = sessionDAO.getActiveSessions();
-		if (sessions != null) {
-			for(Session session : sessions){         
+    public ShiroEndpoint(SessionDAO sessionDAO) {
+        this.sessionDAO = sessionDAO;
+    }
 
-				SessionDescriptor sessionDesc = new SessionDescriptor(session.getId(), session.getHost(),
-						dateFormat.format(session.getStartTimestamp()), 
-						dateFormat.format(session.getLastAccessTime()),
-						session.getTimeout());
-	    		
-	    		if(session instanceof SimpleOnlineSession) {
-	    			SimpleOnlineSession onlineSession = (SimpleOnlineSession) session;
-	    			sessionDesc.setStatus(onlineSession.getStatus().getInfo());
-	    			sessionDesc.setUserAgent(onlineSession.getUserAgent());
-	    			sessionDesc.setSystemHost(onlineSession.getSystemHost());
-	    		}
-	    		if(Boolean.TRUE.equals(session.getAttribute(Constants.SESSION_FORCE_LOGOUT_KEY))) {
-	    			sessionDesc.setStatus(OnlineStatus.FORCE_LOGOUT.getInfo());
-	    		} 
-	    		shiroSessions.put(session.getId(), sessionDesc);
-			}
-		}
-		
-		return new ApplicationShiroSessions(shiroSessions);
-	}
-
-	@ReadOperation
-	public SessionDescriptor getSession(@Selector String sessionId) {
-		Session session = this.sessionDAO.readSession(sessionId);
-		if (session == null) {
-			return null;
-		}
-		return new SessionDescriptor(session);
-	}
-
-	@WriteOperation
-	public boolean forceLogout(@Selector String sessionId) {
-		try {  
-            Session session = this.sessionDAO.readSession(sessionId);  
-            if(session != null) {  
-            	if(session instanceof SimpleOnlineSession) {
-        			SimpleOnlineSession onlineSession = (SimpleOnlineSession) session;
-        			onlineSession.setStatus(OnlineStatus.FORCE_LOGOUT);
-        		}
-                session.setAttribute(Constants.SESSION_FORCE_LOGOUT_KEY, Boolean.TRUE);  
+    @ReadOperation
+    public ApplicationShiroSessions shiroSessions() {
+        Map<Serializable, SessionDescriptor> descriptors = new HashMap<>();
+        Collection<Session> sessions = sessionDAO.getActiveSessions();
+        if (Objects.nonNull(sessions)) {
+            for (Session session : sessions) {
+                descriptors.put(session.getId(), new SessionDescriptor(session));
             }
+        }
+        return new ApplicationShiroSessions(descriptors);
+    }
+
+    @ReadOperation
+    public SessionDescriptor getSession(@Selector String sessionId) {
+        try {
+            Session session = sessionDAO.readSession(sessionId);
+            return Objects.isNull(session) ? null : new SessionDescriptor(session);
+        } catch (UnknownSessionException e) {
+            return null;
+        }
+    }
+
+    @WriteOperation
+    public boolean forceLogout(@Selector String sessionId) {
+        try {
+            Session session = sessionDAO.readSession(sessionId);
+            if (Objects.isNull(session)) {
+                return false;
+            }
+            if (session instanceof SimpleOnlineSession) {
+                ((SimpleOnlineSession) session).setStatus(OnlineStatus.FORCE_LOGOUT);
+            }
+            session.setAttribute(Constants.SESSION_FORCE_LOGOUT_KEY, Boolean.TRUE);
+            sessionDAO.update(session);
             return true;
-        } catch (Exception e) {/*ignore*/
-        	return false;
-        }  
-	}
-	
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
 	/**
 	 * Description of an shiro's {@link Session} sessions, primarily intended for
 	 * serialization to JSON.
@@ -155,20 +146,19 @@ public class ShiroEndpoint {
 			this.timeout = timeout;
 		}
 
-		public SessionDescriptor(Session session) {
-			this.sessionId = session.getId();
-			this.host = session.getHost();
-			this.startTimestamp = dateFormat.format(session.getStartTimestamp());
-			this.lastAccessTime = dateFormat.format(session.getLastAccessTime());
-			this.timeout = session.getTimeout();
-			if(session instanceof SimpleOnlineSession) {
-    			SimpleOnlineSession onlineSession = (SimpleOnlineSession) session;
-    			this.status = onlineSession.getStatus().getInfo();
-    		}
-    		if(Boolean.TRUE.equals(session.getAttribute(Constants.SESSION_FORCE_LOGOUT_KEY))) {
-    			this.status =  OnlineStatus.FORCE_LOGOUT.getInfo();
-    		}
-		}
+        public SessionDescriptor(Session session) {
+            this(session.getId(), session.getHost(), DATE_FORMAT.format(session.getStartTimestamp().toInstant()),
+                    DATE_FORMAT.format(session.getLastAccessTime().toInstant()), session.getTimeout());
+            if (session instanceof SimpleOnlineSession) {
+                SimpleOnlineSession onlineSession = (SimpleOnlineSession) session;
+                this.status = onlineSession.getStatus().getInfo();
+                this.userAgent = onlineSession.getUserAgent();
+                this.systemHost = onlineSession.getSystemHost();
+            }
+            if (Boolean.TRUE.equals(session.getAttribute(Constants.SESSION_FORCE_LOGOUT_KEY))) {
+                this.status = OnlineStatus.FORCE_LOGOUT.getInfo();
+            }
+        }
 
 		public Serializable getSessionId() {
 			return sessionId;
