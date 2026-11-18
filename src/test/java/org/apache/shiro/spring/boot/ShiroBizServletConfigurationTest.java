@@ -3,6 +3,13 @@ package org.apache.shiro.spring.boot;
 import javax.servlet.Filter;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.shiro.biz.authc.DefaultAuthenticationFailureHandler;
+import org.apache.shiro.biz.web.filter.HttpServletSessionDequeFilter;
+import org.apache.shiro.biz.web.filter.HttpServletSessionStatusFilter;
+import org.apache.shiro.biz.web.filter.authc.AuthenticatingFailureCounter;
+import org.apache.shiro.biz.web.filter.authc.AuthenticatingFailureRequestCounter;
+import org.apache.shiro.cache.CacheManager;
+import org.apache.shiro.cache.MemoryConstrainedCacheManager;
 import org.apache.shiro.event.EventBus;
 import org.apache.shiro.event.support.DefaultEventBus;
 import org.apache.shiro.realm.Realm;
@@ -33,7 +40,7 @@ import static org.mockito.Mockito.verify;
 class ShiroBizServletConfigurationTest {
 
     private final WebApplicationContextRunner contextRunner = new WebApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(ShiroBizWebAutoConfiguration.class,
+            .withConfiguration(AutoConfigurations.of(ShiroBizAutoConfiguration.class, ShiroBizWebAutoConfiguration.class,
                     ShiroBizWebFilterConfiguration.class, ShiroMemoryCacheConfiguration.class))
             .withBean(EventBus.class, DefaultEventBus::new)
             .withBean(Realm.class, SimpleAccountRealm::new)
@@ -48,6 +55,7 @@ class ShiroBizServletConfigurationTest {
                         "shiro.filter-chain-definition-map.[/public]=anon")
                 .run(context -> {
                     assertThat(context).hasNotFailed();
+                    assertThat(context).hasSingleBean(DefaultAuthenticationFailureHandler.class);
                     FilterRegistrationBean<?> methods = context.getBean("methods", FilterRegistrationBean.class);
                     assertThat(methods.isEnabled()).isFalse();
                     Filter filter = context.getBean("filterShiroFilterRegistrationBean", FilterRegistrationBean.class)
@@ -97,6 +105,36 @@ class ShiroBizServletConfigurationTest {
             assertThat(context.getBean(SessionDAO.class)).isInstanceOf(MemorySessionDAO.class);
             assertThat(context).doesNotHaveBean("filterShiroFilterRegistrationBean");
         });
+    }
+
+    @Test
+    void installsConfiguredSessionFiltersWhenTheApplicationProvidesCacheAndSessionManagers() {
+        CacheManager cache = new MemoryConstrainedCacheManager();
+        SessionManager sessions = new ServletContainerSessionManager();
+        contextRunner.withBean(CacheManager.class, () -> cache)
+                .withBean("sessionManager", SessionManager.class, () -> sessions)
+                .withPropertyValues("shiro.enabled=true", "shiro.session-stateless=true",
+                        "shiro.login-url=/login", "shiro.redirect-url=/signed-out", "shiro.kickout-first=true",
+                        "shiro.session-deque-cache-name=active-users", "shiro.session-maximum-kickout=2")
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    FilterRegistrationBean<?> statusRegistration = context.getBean("sessionStatus", FilterRegistrationBean.class);
+                    FilterRegistrationBean<?> dequeRegistration = context.getBean("sessionDeque", FilterRegistrationBean.class);
+                    assertThat(statusRegistration.isEnabled()).isFalse();
+                    assertThat(dequeRegistration.isEnabled()).isFalse();
+                    HttpServletSessionStatusFilter status = (HttpServletSessionStatusFilter) statusRegistration.getFilter();
+                    HttpServletSessionDequeFilter deque = (HttpServletSessionDequeFilter) dequeRegistration.getFilter();
+                    assertThat(status.getLoginUrl()).isEqualTo("/login");
+                    assertThat(status.getSessionManager()).isSameAs(sessions);
+                    assertThat(deque.getSessionManager()).isSameAs(sessions);
+                    assertThat(deque.getCacheManager()).isSameAs(cache);
+                    assertThat(deque.getSessionDequeCacheName()).isEqualTo("active-users");
+                    assertThat(deque.getSessionMaximumKickout()).isEqualTo(2);
+                    assertThat(deque.isKickoutFirst()).isTrue();
+                    assertThat(deque.getRedirectUrl()).isEqualTo("/signed-out");
+                    assertThat(context.getBean(AuthenticatingFailureCounter.class))
+                            .isInstanceOf(AuthenticatingFailureRequestCounter.class);
+                });
     }
 
     private void assertRequest(Filter filter, String method, String path, int status, boolean reachedServlet)

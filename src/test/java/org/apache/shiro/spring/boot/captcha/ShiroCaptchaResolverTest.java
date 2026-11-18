@@ -3,6 +3,7 @@ package org.apache.shiro.spring.boot.captcha;
 import com.google.code.kaptcha.spring.boot.ext.KaptchaResolver;
 import com.google.code.kaptcha.spring.boot.ext.exception.CaptchaIncorrectException;
 import com.google.code.kaptcha.spring.boot.ext.exception.CaptchaTimeoutException;
+import com.google.code.kaptcha.util.Config;
 import com.octo.captcha.service.image.ImageCaptchaService;
 import ml.miron.captcha.util.CaptchaServletUtil;
 import nl.captcha.Captcha;
@@ -146,6 +147,38 @@ class ShiroCaptchaResolverTest {
         assertThat(resolver.validCaptcha(request, token)).isTrue();
         when(token.getCaptcha()).thenReturn("wrong");
         assertThat(resolver.validCaptcha(request, token)).isFalse();
+    }
+
+    @Test
+    void readsKaptchaServletKeysForCacheAndSessionValidation() {
+        Config config = mock(Config.class);
+        when(config.getSessionKey()).thenReturn("challenge");
+        when(config.getSessionDate()).thenReturn("issued");
+        Cache<String, Object> cache = new MapCache<>("captcha", new HashMap<>());
+        ShiroKaptchaCacheResolver cached = new ShiroKaptchaCacheResolver(cache);
+        ShiroKaptchaSessionResolver session = new ShiroKaptchaSessionResolver();
+        cached.init(config);
+        session.init(config);
+
+        assertThat(cached.getCaptchaStoreKey()).isEqualTo("challenge");
+        assertThat(cached.getCaptchaDateStoreKey()).isEqualTo("issued");
+        assertThat(session.getCaptchaStoreKey()).isEqualTo("challenge");
+        assertThat(session.getCaptchaDateStoreKey()).isEqualTo("issued");
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        CaptchaAuthenticationToken token = mock(CaptchaAuthenticationToken.class);
+        assertThatThrownBy(() -> cached.validCaptcha(request, token)).isInstanceOf(IncorrectCaptchaException.class);
+        when(token.getCaptcha()).thenReturn("answer");
+        assertThatThrownBy(() -> cached.validCaptcha(request, token)).isInstanceOf(IncorrectCaptchaException.class);
+
+        Subject subject = new Subject.Builder(new DefaultSecurityManager()).buildSubject();
+        subject.execute(() -> {
+            assertThatThrownBy(() -> session.validCaptcha(request, token)).isInstanceOf(IncorrectCaptchaException.class);
+            session.setCaptcha(request, new MockHttpServletResponse(), "Answer", new Date());
+            assertThat(session.validCaptcha(request, token)).isTrue();
+        });
+        cached.setCaptcha(request, new MockHttpServletResponse(), "Answer", new Date());
+        assertThat(cached.validCaptcha(request, token)).isTrue();
     }
 
 }

@@ -22,7 +22,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(ShiroSessionManagerCookieProperties.PREFIX)
 public class ShiroSessionManagerCookieProperties {
 
-	public static final String PREFIX = "shiro.sessionManager.cookie";
+	public static final String PREFIX = "shiro.session-manager.cookie";
 	
     // Session Cookie info
 
