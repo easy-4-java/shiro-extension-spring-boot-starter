@@ -4,9 +4,12 @@ import com.google.code.kaptcha.spring.boot.ext.KaptchaResolver;
 import com.google.code.kaptcha.spring.boot.ext.exception.CaptchaIncorrectException;
 import com.google.code.kaptcha.spring.boot.ext.exception.CaptchaTimeoutException;
 import com.octo.captcha.service.image.ImageCaptchaService;
+import ml.miron.captcha.util.CaptchaServletUtil;
+import nl.captcha.Captcha;
 import org.apache.shiro.biz.authc.exception.IncorrectCaptchaException;
 import org.apache.shiro.biz.authc.exception.InvalidCaptchaException;
 import org.apache.shiro.biz.authc.token.CaptchaAuthenticationToken;
+import org.apache.shiro.biz.web.filter.authc.captcha.CaptchaResolver;
 import org.apache.shiro.cache.Cache;
 import org.apache.shiro.cache.MapCache;
 import org.apache.shiro.mgt.DefaultSecurityManager;
@@ -117,6 +120,32 @@ class ShiroCaptchaResolverTest {
                     .isInstanceOf(CaptchaTimeoutException.class);
             return null;
         });
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void simpleAndSmartCaptchaValidateTheChallengeInTheCurrentSession(boolean smart) {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        CaptchaAuthenticationToken token = mock(CaptchaAuthenticationToken.class);
+        CaptchaResolver resolver = smart
+                ? new ShiroSmartCaptchaCaptchaResolver()
+                : new ShiroSimpleCaptchaCaptchaResolver();
+        when(token.getCaptcha()).thenReturn("");
+        assertThatThrownBy(() -> resolver.validCaptcha(request, token)).isInstanceOf(IncorrectCaptchaException.class);
+        when(token.getCaptcha()).thenReturn("answer");
+        assertThatThrownBy(() -> resolver.validCaptcha(request, token))
+                .isInstanceOf(IncorrectCaptchaException.class)
+                .hasCauseInstanceOf(InvalidCaptchaException.class);
+
+        if (smart) {
+            request.getSession().setAttribute(CaptchaServletUtil.CAPTCHA_ATTRIBUTE, "ANSWER");
+        } else {
+            Captcha challenge = new Captcha.Builder(120, 50).addText(() -> "answer").build();
+            request.getSession().setAttribute(Captcha.NAME, challenge);
+        }
+        assertThat(resolver.validCaptcha(request, token)).isTrue();
+        when(token.getCaptcha()).thenReturn("wrong");
+        assertThat(resolver.validCaptcha(request, token)).isFalse();
     }
 
 }
