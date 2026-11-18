@@ -1,6 +1,7 @@
 package org.apache.shiro.spring.boot.captcha;
 
 import java.util.Date;
+import java.util.Objects;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
@@ -38,7 +39,7 @@ public class ShiroKaptchaSessionResolver implements KaptchaResolver, CaptchaReso
 	/**
      * 验证码创建时间在Session中存储值的key
      */
-	private String captchaDateStoreKey = CAPTCHA_SESSION_ATTRIBUTE_NAME;
+	private String captchaDateStoreKey = CAPTCHA_DATE_SESSION_ATTRIBUTE_NAME;
 	/**
      * 验证码有效期；单位（毫秒），默认 60000
      */
@@ -103,7 +104,7 @@ public class ShiroKaptchaSessionResolver implements KaptchaResolver, CaptchaReso
 		}
 		// 检查验证码是否过期
 		Date sessionCapDate = (Date) session.getAttribute(getCaptchaDateStoreKey());
-		if(new Date().getTime() - sessionCapDate.getTime()  > getCaptchaTimeout()) {
+		if (Objects.isNull(sessionCapDate) || System.currentTimeMillis() - sessionCapDate.getTime() > getCaptchaTimeout()) {
 			throw new CaptchaTimeoutException();
 		}
 		
