@@ -72,9 +72,9 @@ jobs:
           shiro-redisson a22c255599a7346f7bae9adba707046ec80510ba
           SOURCES
 
-          if [[ "$REPOSITORY" != easy-4-java/shiro-biz-spring-boot-starter ]]; then
-            fetch_source shiro-biz-spring-boot-starter 2042304aceb822c03afde146508c7a50adcf19ed
-            "${maven[@]}" -f "$source_dir/shiro-biz-spring-boot-starter/pom.xml" clean install
+          if [[ "$REPOSITORY" != easy-4-java/shiro-extension-spring-boot-starter ]]; then
+            fetch_source shiro-extension-spring-boot-starter 2042304aceb822c03afde146508c7a50adcf19ed
+            "${maven[@]}" -f "$source_dir/shiro-extension-spring-boot-starter/pom.xml" clean install
           fi
 
           if [[ "$REPOSITORY" == easy-4-java/shiro-pac4j-spring-boot-starter ]]; then
