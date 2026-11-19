@@ -26,6 +26,7 @@ import org.apache.shiro.web.session.mgt.DefaultWebSessionManager;
 import org.apache.shiro.web.session.mgt.ServletContainerSessionManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.mock.web.MockFilterChain;
@@ -45,6 +46,17 @@ class ShiroBizServletConfigurationTest {
             .withBean(EventBus.class, DefaultEventBus::new)
             .withBean(Realm.class, SimpleAccountRealm::new)
             .withPropertyValues("shiro.static-security-manager-enabled=false");
+
+    @Test
+    void optionalActuatorOrderingDoesNotReferenceActuatorClassesDirectly() {
+        AutoConfigureAfter order = ShiroBizWebAutoConfiguration.class.getAnnotation(AutoConfigureAfter.class);
+
+        assertThat(order.value()).isEmpty();
+        assertThat(order.name()).containsExactly(
+                "org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration",
+                "org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration",
+                "org.apache.shiro.spring.config.web.autoconfigure.ShiroWebMvcAutoConfiguration");
+    }
 
     @Test
     void configuredMethodsAreEnforcedOnlyOnTheirShiroPath() {
