@@ -497,15 +497,17 @@
         <maven-surefire-plugin.version>3.5.0</maven-surefire-plugin.version>
         <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
         <!-- Dependency versions -->
+        <bouncycastle.version>1.87</bouncycastle.version>
+        <jackson-bom.version>2.21.8</jackson-bom.version>
+        <log4j2.version>2.25.5</log4j2.version>
         <commons-codec.version>1.17.1</commons-codec.version>
-        <commons-lang3.version>3.14.0</commons-lang3.version>
+        <commons-lang3.version>3.22.0</commons-lang3.version>
         <commons-io.version>2.16.1</commons-io.version>
-         <ehcache3.version>3.6.0</ehcache3.version>
         <ehcache.version>2.10.9.2</ehcache.version>
         <freemarker.version>2.3.33</freemarker.version>
-        <guava.version>33.2.1-jre</guava.version>
+        <guava.version>33.7.2-jre</guava.version>
          <j2cache.version>2.8.5-release</j2cache.version>
-        <shiro.version>1.13.0</shiro.version>
+        <shiro.version>2.2.1</shiro.version>
         <shiro-biz.version>2.0.x.20260630-SNAPSHOT</shiro-biz.version>
         <shiro-ehcache.version>${shiro.version}</shiro-ehcache.version>
         <shiro-ehcache3.version>1.0.0</shiro-ehcache3.version>
@@ -622,23 +624,35 @@
             <groupId>org.apache.shiro</groupId>
             <artifactId>shiro-spring-boot-starter</artifactId>
             <version>${shiro.version}</version>
+            <classifier>jakarta</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.shiro</groupId>
+                    <artifactId>shiro-spring</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.shiro/shiro-spring-boot-web-starter -->
         <dependency>
             <groupId>org.apache.shiro</groupId>
             <artifactId>shiro-spring-boot-web-starter</artifactId>
             <version>${shiro.version}</version>
+            <classifier>jakarta</classifier>
             <exclusions>
+                <exclusion>
+                    <groupId>org.apache.shiro</groupId>
+                    <artifactId>shiro-spring-boot-starter</artifactId>
+                </exclusion>
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-tomcat</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/io.github.hiwepy/shiro-biz -->
+        <!-- https://github.com/easy-4-java/shiro-extension -->
         <dependency>
             <groupId>io.github.easy4j</groupId>
-            <artifactId>shiro-biz</artifactId>
+            <artifactId>shiro-extension-spring</artifactId>
             <version>${shiro-biz.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.shiro/shiro-ehcache -->
@@ -667,11 +681,24 @@
             <artifactId>shiro-ehcache3</artifactId>
             <version>${shiro-ehcache3.version}</version>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.ehcache</groupId>
+                    <artifactId>ehcache</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.ehcache/ehcache -->
         <dependency>
             <groupId>org.ehcache</groupId>
             <artifactId>ehcache</artifactId>
+            <version>${ehcache3.version}</version>
+            <classifier>jakarta</classifier>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
             <scope>provided</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.shiro/shiro-hazelcast -->
@@ -687,6 +714,12 @@
             <artifactId>shiro-j2cache</artifactId>
             <version>${shiro-j2cache.version}</version>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.shiro</groupId>
+                    <artifactId>shiro-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- https://mvnrepository.com/artifact/net.oschina.j2cache/j2cache-core -->
         <dependency>
@@ -772,6 +805,11 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
             <dependency>
                 <groupId>jakarta.websocket</groupId>
                 <artifactId>jakarta.websocket-api</artifactId>

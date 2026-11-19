@@ -229,6 +229,7 @@ public class ShiroBizWebAutoConfiguration extends AbstractShiroWebConfiguration 
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
 	protected DefaultAuthenticationFailureHandler defaultAuthenticationFailureHandler() {
 		return new DefaultAuthenticationFailureHandler();
 	}

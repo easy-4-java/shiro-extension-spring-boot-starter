@@ -3,8 +3,7 @@ package org.apache.shiro.spring.boot.template.method;
 
 import java.util.List;
 
-import org.apache.shiro.spring.boot.captcha.ShiroKaptchaProperties;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import freemarker.template.SimpleScalar;
 import freemarker.template.TemplateMethodModelEx;
@@ -16,12 +15,12 @@ import freemarker.template.TemplateModelException;
  */
 public class CaptchaEnabled implements TemplateMethodModelEx {
 
-	@Autowired
-	private ShiroKaptchaProperties properties;
+	@Value("${shiro.kaptcha.enabled:false}")
+	private boolean enabled;
 	
 	@SuppressWarnings("rawtypes")
 	public Object exec(List arguments) throws TemplateModelException {
-		return new SimpleScalar(Boolean.toString(properties.isEnabled()));
+		return new SimpleScalar(Boolean.toString(enabled));
 	}
 
 }

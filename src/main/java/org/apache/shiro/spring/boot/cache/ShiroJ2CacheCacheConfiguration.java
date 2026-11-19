@@ -16,7 +16,7 @@
 package org.apache.shiro.spring.boot.cache;
 
 import org.apache.shiro.cache.CacheManager;
-import org.apache.shiro.cache.j2cache.J2CacheManager;
+import org.apache.shiro.cache.j2cache.J2CacheWrapper;
 import org.apache.shiro.spring.config.web.autoconfigure.ShiroWebAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -32,14 +32,14 @@ import net.oschina.j2cache.CacheChannel;
 @Configuration
 @AutoConfigureAfter(AbstractCachingConfiguration.class)
 @AutoConfigureBefore(ShiroWebAutoConfiguration.class)
-@ConditionalOnClass(net.oschina.j2cache.J2Cache.class)
+@ConditionalOnClass({CacheChannel.class, J2CacheWrapper.class})
 @ConditionalOnProperty(prefix = ShiroCacheProperties.PREFIX, value = "type", havingValue = "j2cache")
 public class ShiroJ2CacheCacheConfiguration {
 
-	@Bean
+	@Bean(destroyMethod = "close")
 	@ConditionalOnBean(CacheChannel.class)
 	public CacheManager shiroCacheManager(CacheChannel channel) {
-		return new J2CacheManager(channel);
+		return new ShiroJ2CacheManager(channel);
 	}
 
 }

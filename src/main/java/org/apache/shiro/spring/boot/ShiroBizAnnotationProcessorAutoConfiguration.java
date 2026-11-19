@@ -17,45 +17,42 @@ package org.apache.shiro.spring.boot;
 
 import org.apache.shiro.spring.boot.autoconfigure.ShiroAnnotationProcessorAutoConfiguration;
 import org.apache.shiro.spring.config.AbstractShiroAnnotationProcessorConfiguration;
-import org.apache.shiro.spring.config.ShiroAnnotationProcessorConfiguration;
-import org.apache.shiro.util.StringUtils;
-import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
+import org.springframework.core.env.Environment;
+import org.springframework.util.StringUtils;
 
-@AutoConfigureBefore({ShiroAnnotationProcessorAutoConfiguration.class, ShiroAnnotationProcessorConfiguration.class })
-@Configuration
+@AutoConfigureAfter(ShiroAnnotationProcessorAutoConfiguration.class)
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(prefix = ShiroBizAnnotationProperties.PREFIX, value = "enabled", havingValue = "true")
-@EnableConfigurationProperties({ ShiroBizAnnotationProperties.class })
+@EnableConfigurationProperties(ShiroBizAnnotationProperties.class)
 public class ShiroBizAnnotationProcessorAutoConfiguration extends AbstractShiroAnnotationProcessorConfiguration {
 
-	@Autowired
-	private ShiroBizAnnotationProperties properties;
+    private static final String SHIRO_PROXY_CREATOR = "defaultAdvisorAutoProxyCreator";
 
-	@Bean
-    @DependsOn("lifecycleBeanPostProcessor")
-    @Override
-    public DefaultAdvisorAutoProxyCreator defaultAdvisorAutoProxyCreator() {
-
-		// 解决Shiro与Spring Aop 冲突
-		DefaultAdvisorAutoProxyCreator advisorAutoProxyCreator = super.defaultAdvisorAutoProxyCreator();
-		advisorAutoProxyCreator.setProxyTargetClass(properties.isProxyTargetClass());
-        advisorAutoProxyCreator.setExposeProxy(properties.isExposeProxy());
-        advisorAutoProxyCreator.setFrozen(properties.isFrozen());
-        advisorAutoProxyCreator.setOpaque(properties.isOpaque());
-
-        if(properties.isUsePrefix() && StringUtils.hasText(properties.getAdvisorBeanNamePrefix())) {
-        	advisorAutoProxyCreator.setUsePrefix(properties.isUsePrefix());
-        	advisorAutoProxyCreator.setAdvisorBeanNamePrefix(properties.getAdvisorBeanNamePrefix());
-        }
-
-        return advisorAutoProxyCreator;
+    @Bean
+    static BeanFactoryPostProcessor shiroAnnotationProxySettings(Environment environment) {
+        return beanFactory -> {
+            if (!beanFactory.containsBeanDefinition(SHIRO_PROXY_CREATOR)) {
+                return;
+            }
+            ShiroBizAnnotationProperties settings = Binder.get(environment)
+                    .bind(ShiroBizAnnotationProperties.PREFIX, ShiroBizAnnotationProperties.class)
+                    .orElseGet(ShiroBizAnnotationProperties::new);
+            var properties = beanFactory.getBeanDefinition(SHIRO_PROXY_CREATOR).getPropertyValues();
+            properties.add("proxyTargetClass", settings.isProxyTargetClass());
+            properties.add("exposeProxy", settings.isExposeProxy());
+            properties.add("frozen", settings.isFrozen());
+            properties.add("opaque", settings.isOpaque());
+            if (settings.isUsePrefix() && StringUtils.hasText(settings.getAdvisorBeanNamePrefix())) {
+                properties.add("usePrefix", true);
+                properties.add("advisorBeanNamePrefix", settings.getAdvisorBeanNamePrefix());
+            }
+        };
     }
-
-
 }

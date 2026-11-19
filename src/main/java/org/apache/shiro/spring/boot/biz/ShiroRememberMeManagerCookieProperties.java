@@ -18,7 +18,7 @@ package org.apache.shiro.spring.boot.biz;
 import org.apache.shiro.web.mgt.CookieRememberMeManager;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(ShiroRememberMeManagerCookieProperties.PREFIX)
+@ConfigurationProperties("shiro.remember-me-manager.cookie")
 public class ShiroRememberMeManagerCookieProperties {
 
 	public static final String PREFIX = "shiro.rememberMeManager.cookie";
