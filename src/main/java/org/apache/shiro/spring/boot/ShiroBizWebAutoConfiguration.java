@@ -17,15 +17,12 @@ import org.apache.shiro.session.mgt.*;
 import org.apache.shiro.session.mgt.eis.*;
 import org.apache.shiro.spring.config.ShiroAnnotationProcessorConfiguration;
 import org.apache.shiro.spring.config.web.autoconfigure.ShiroWebAutoConfiguration;
-import org.apache.shiro.spring.config.web.autoconfigure.ShiroWebMvcAutoConfiguration;
 import org.apache.shiro.spring.web.config.AbstractShiroWebConfiguration;
 import org.apache.shiro.spring.web.config.DefaultShiroFilterChainDefinition;
 import org.apache.shiro.spring.web.config.ShiroFilterChainDefinition;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -45,7 +42,11 @@ import java.util.Map.Entry;
 
 @Configuration
 @AutoConfigureBefore({ ShiroWebAutoConfiguration.class, ShiroAnnotationProcessorConfiguration.class })
-@AutoConfigureAfter({ MetricsAutoConfiguration.class, CompositeMeterRegistryAutoConfiguration.class, ShiroWebMvcAutoConfiguration.class })
+@AutoConfigureAfter(name = {
+        "org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration",
+        "org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration",
+        "org.apache.shiro.spring.config.web.autoconfigure.ShiroWebMvcAutoConfiguration"
+})
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @ConditionalOnProperty(name = "shiro.web.enabled", matchIfMissing = true)
 @EnableConfigurationProperties({ ShiroBizProperties.class })
