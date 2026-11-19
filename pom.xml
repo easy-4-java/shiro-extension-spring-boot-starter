@@ -497,12 +497,15 @@
         <maven-surefire-plugin.version>3.5.0</maven-surefire-plugin.version>
         <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
         <!-- Dependency versions -->
+        <bouncycastle.version>1.87</bouncycastle.version>
+        <jackson-bom.version>2.21.8</jackson-bom.version>
+        <log4j2.version>2.25.5</log4j2.version>
         <commons-codec.version>1.17.1</commons-codec.version>
-        <commons-lang3.version>3.14.0</commons-lang3.version>
+        <commons-lang3.version>3.22.0</commons-lang3.version>
         <commons-io.version>2.16.1</commons-io.version>
         <ehcache.version>2.10.9.2</ehcache.version>
         <freemarker.version>2.3.33</freemarker.version>
-        <guava.version>33.2.1-jre</guava.version>
+        <guava.version>33.7.2-jre</guava.version>
          <j2cache.version>2.8.5-release</j2cache.version>
         <shiro.version>2.2.1</shiro.version>
         <shiro-biz.version>2.0.x.20260630-SNAPSHOT</shiro-biz.version>
@@ -802,6 +805,11 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
             <dependency>
                 <groupId>jakarta.websocket</groupId>
                 <artifactId>jakarta.websocket-api</artifactId>
