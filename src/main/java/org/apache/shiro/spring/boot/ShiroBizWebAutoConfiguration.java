@@ -23,6 +23,7 @@ import org.apache.shiro.spring.web.config.DefaultShiroFilterChainDefinition;
 import org.apache.shiro.spring.web.config.ShiroFilterChainDefinition;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration;
 import org.springframework.boot.micrometer.metrics.autoconfigure.MetricsAutoConfiguration;
@@ -219,6 +220,9 @@ public class ShiroBizWebAutoConfiguration extends AbstractShiroWebConfiguration 
 		return sessionManager;
 	}
 
+	@Autowired
+	private ObjectProvider<SubjectFactory> subjectFactories;
+
 	@Bean
 	@ConditionalOnMissingBean
 	@Override
@@ -241,7 +245,7 @@ public class ShiroBizWebAutoConfiguration extends AbstractShiroWebConfiguration 
 		securityManager.setRememberMeManager(rememberMeManager());
 		securityManager.setSessionManager(sessionManager());
 		securityManager.setSubjectDAO(subjectDAO());
-		securityManager.setSubjectFactory(subjectFactory());
+		securityManager.setSubjectFactory(subjectFactories.getIfAvailable(this::subjectFactory));
 		return securityManager;
 
 	}

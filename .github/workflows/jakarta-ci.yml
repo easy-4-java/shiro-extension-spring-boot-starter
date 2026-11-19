@@ -1,0 +1,102 @@
+name: Shiro Jakarta CI
+
+on:
+  push:
+    branches:
+      - feature/REQ-20261119-wandl-shiro-41-jakarta
+      - test/20261119
+      - 4.1.x
+  pull_request:
+    branches:
+      - test/20261119
+      - 4.1.x
+  workflow_call:
+    secrets:
+      MAVEN_SETTINGS_XML:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Configure Easy4J Maven repositories
+        env:
+          MAVEN_SETTINGS_XML: ${{ secrets.MAVEN_SETTINGS_XML }}
+        shell: bash
+        run: |
+          test -n "$MAVEN_SETTINGS_XML"
+          umask 077
+          printf '%s' "$MAVEN_SETTINGS_XML" > "$RUNNER_TEMP/maven-settings.xml"
+
+      - name: Build locked dependency snapshots
+        env:
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_dir="$RUNNER_TEMP/easy4j-sources"
+          mkdir -p "$source_dir"
+          maven=(./mvnw -B -ntp -nsu -s "$RUNNER_TEMP/maven-settings.xml"
+            "-Dmaven.repo.local=$RUNNER_TEMP/verified-m2" -Dgpg.skip=true)
+          fetch_source() {
+            local repo=$1 revision=$2 directory="$source_dir/$1"
+            git init -q "$directory"
+            git -C "$directory" fetch -q --depth=1 "https://github.com/easy-4-java/${repo}.git" "$revision"
+            git -C "$directory" checkout -q --detach FETCH_HEAD
+            test "$(git -C "$directory" rev-parse HEAD)" = "$revision"
+            printf '%s at %s\n' "$repo" "$revision"
+          }
+
+          while read -r repo revision; do
+            fetch_source "$repo" "$revision"
+            "${maven[@]}" -DskipTests -Djacoco.skip=true -f "$source_dir/$repo/pom.xml" clean install
+          done <<'SOURCES'
+          jwt-issuer c5873ed3d450f1900dcbf2a4fc2e590077d233f7
+          shiro-j2cache 52d21fbef45f22e0236ed5ece187a2d4446f14c6
+          kaptcha-spring-boot-starter 26a0ebf5edefc2ef53d73da7fac66ebade7b7b13
+          jcaptcha-spring-boot-starter 446c52fd18809dcd88f3eaa027379468e726e7ed
+          simplecaptcha-spring-boot-starter e2ed6a54da4c53558bf04e014e93d6b0c725d684
+          smartcaptcha-spring-boot-starter 77c3bd790ea47ecd4d4b4ec1acb7b7b140c871d0
+          shiro-extension fc7590367b706d8b721aa67e034f924ed0363845
+          shiro-redisson a22c255599a7346f7bae9adba707046ec80510ba
+          SOURCES
+
+          if [[ "$REPOSITORY" != easy-4-java/shiro-extension-spring-boot-starter ]]; then
+            fetch_source shiro-extension-spring-boot-starter 2042304aceb822c03afde146508c7a50adcf19ed
+            "${maven[@]}" -f "$source_dir/shiro-extension-spring-boot-starter/pom.xml" clean install
+          fi
+
+          if [[ "$REPOSITORY" == easy-4-java/shiro-pac4j-spring-boot-starter ]]; then
+            fetch_source pac4j-extension 608673480b6387ffeff94631dc23edbfe05c36cd
+            "${maven[@]}" -f "$source_dir/pac4j-extension/pom.xml" -pl pac4j-extension-core -am clean install
+            fetch_source pac4j-oauth-extension b4a9758fe6edd8fedf49d15488e8ea1f2b7a0409
+            "${maven[@]}" -f "$source_dir/pac4j-oauth-extension/pom.xml" clean install
+            fetch_source pac4j-spring-boot-starter 4884f55ef980fbec1fdf95a2be5704e002788d98
+            "${maven[@]}" -f "$source_dir/pac4j-spring-boot-starter/pom.xml" clean install
+          fi
+
+      - name: Verify the Boot 4.1 starter
+        run: >
+          ./mvnw -B -ntp -nsu -s "$RUNNER_TEMP/maven-settings.xml"
+          -Dmaven.repo.local="$RUNNER_TEMP/verified-m2" clean verify
+      - name: Upload test and coverage reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: verification-reports
+          path: |
+            target/surefire-reports
+            target/site/jacoco

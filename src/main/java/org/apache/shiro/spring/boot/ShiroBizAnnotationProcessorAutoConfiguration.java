@@ -18,7 +18,7 @@ package org.apache.shiro.spring.boot;
 import org.apache.shiro.spring.boot.autoconfigure.ShiroAnnotationProcessorAutoConfiguration;
 import org.apache.shiro.spring.config.AbstractShiroAnnotationProcessorConfiguration;
 import org.apache.shiro.spring.config.ShiroAnnotationProcessorConfiguration;
-import org.apache.shiro.util.StringUtils;
+import org.apache.shiro.lang.util.StringUtils;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -52,7 +52,6 @@ public class ShiroBizAnnotationProcessorAutoConfiguration extends AbstractShiroA
 	 */
 	@Bean
     @DependsOn("lifecycleBeanPostProcessor")
-    @Override
     /**
      * <p>Default advisor auto proxy creator.</p>
      * @return the default advisor auto proxy creator
@@ -60,7 +59,7 @@ public class ShiroBizAnnotationProcessorAutoConfiguration extends AbstractShiroA
     public DefaultAdvisorAutoProxyCreator defaultAdvisorAutoProxyCreator() {
 
 		// Resolve the conflict between Shiro and Spring AOP
-		DefaultAdvisorAutoProxyCreator advisorAutoProxyCreator = super.defaultAdvisorAutoProxyCreator();
+		DefaultAdvisorAutoProxyCreator advisorAutoProxyCreator = new DefaultAdvisorAutoProxyCreator();
 		advisorAutoProxyCreator.setProxyTargetClass(properties.isProxyTargetClass());
 		advisorAutoProxyCreator.setOptimize(properties.isOptimize());
         advisorAutoProxyCreator.setExposeProxy(properties.isExposeProxy());

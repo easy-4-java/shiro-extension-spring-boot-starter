@@ -15,7 +15,7 @@
  */
 package org.apache.shiro.spring.boot.captcha;
 
-import javax.servlet.ServletRequest;
+import jakarta.servlet.ServletRequest;
 
 import com.octo.captcha.service.image.ImageCaptchaService;
 import com.octo.captcha.spring.boot.servlet.image.SimpleImageCaptchaServlet;
